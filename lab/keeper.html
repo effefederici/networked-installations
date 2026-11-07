@@ -1,73 +1,80 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Doorkeeper</title>
+<title>Doorkeeper · Lab of the Unreadable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
-:root{color-scheme:dark;--bg:#090d10;--fg:#dce7e3;--dim:#83938f;--line:#33433e;--accent:#b6e4c9;--shut:#c86b55}
+:root{--bg:#f3f3f1;--fg:#141414;--dim:#7a7a78;--line:#d9d9d5;--open:#141414;--shut:#b5452f;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0e0e0e;--fg:#ececea;--dim:#8a8a87;--line:#2a2a28;--open:#ececea;--shut:#d0644c}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:14px}
-header{padding:18px 3vw;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
-small{color:var(--dim);font-size:12px;letter-spacing:.12em}
-h1{font-size:20px;font-weight:500;letter-spacing:.14em;margin:0}
-main{padding:24px 3vw 60px;display:grid;gap:28px;max-width:1100px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-weight:300;font-size:15px}
+header{padding:22px max(16px,4vw);display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+small{font-size:13px;letter-spacing:.02em}
+h1{font-size:clamp(24px,3.2vw,34px);font-weight:300;margin:6px 0 0;letter-spacing:-.01em}
+main{padding:8px max(16px,4vw) 60px;display:grid;gap:34px;max-width:1100px}
 section{border-top:1px solid var(--line);padding-top:16px;display:grid;gap:14px}
-h2{font-size:12px;letter-spacing:.16em;color:var(--dim);font-weight:400;margin:0}
+h2{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--dim);font-weight:400;margin:0;text-transform:uppercase}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
-label{display:grid;gap:6px;font-size:11px;letter-spacing:.12em;color:var(--dim)}
-input{background:#0f1714;border:1px solid #52675d;color:var(--fg);padding:9px 10px;font:inherit}
-button{background:#15211d;border:1px solid #52675d;color:var(--fg);padding:9px 12px;cursor:pointer;font:inherit;letter-spacing:.08em}
-button:hover{background:#243a31}button:disabled{opacity:.35;cursor:default}
-button.ok{border-color:var(--accent);color:var(--accent)}button.no{border-color:var(--shut);color:var(--shut)}
-.state{font-size:16px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
-.lamp{display:inline-block;width:.65em;height:.65em;border-radius:50%;margin-right:.5em;background:var(--dim)}
-.lamp.on{background:var(--accent)}.lamp.off{background:var(--shut)}
+label{display:grid;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+input{background:transparent;border:0;border-bottom:1px solid var(--fg);color:var(--fg);padding:8px 2px;font:inherit;font-size:15px}
+input:focus{outline:none;border-bottom-width:2px}
+input[type=file]{border:0;font-size:13px}
+button{background:transparent;border:1px solid var(--fg);color:var(--fg);padding:8px 14px;cursor:pointer;font:inherit;font-size:13px;letter-spacing:.03em}
+button:hover{background:var(--fg);color:var(--bg)}button:disabled{opacity:.3;cursor:default;background:transparent;color:var(--fg)}
+button.ok{background:var(--fg);color:var(--bg)}button.no{border-color:var(--shut);color:var(--shut)}button.no:hover{background:var(--shut);color:var(--bg)}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+.state{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+.lamp{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;vertical-align:1px;background:var(--dim)}
+.lamp.on{background:var(--open)}.lamp.off{background:var(--shut)}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
-th{font-size:11px;letter-spacing:.12em;color:var(--dim);font-weight:400}
-td.word{font-size:16px}
-.tag{font-size:11px;letter-spacing:.12em;padding:2px 6px;border:1px solid var(--line)}
-.tag.waiting{color:var(--fg)}.tag.admitted{color:var(--accent);border-color:var(--accent)}.tag.refused{color:var(--shut);border-color:var(--shut)}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--dim);font-weight:400;text-transform:uppercase}
+td.name{font-size:17px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.tag.admitted{color:var(--fg)}.tag.waiting{color:var(--dim)}.tag.refused{color:var(--shut)}
 .scroll{overflow-x:auto}
-.note{color:var(--dim);line-height:1.7;margin:0}
+.note{color:var(--dim);line-height:1.6;margin:0}
 [hidden]{display:none!important}
 </style></head><body>
-<header><div><small>LABORATORY OF UNREADABLE PHENOMENA / DOORKEEPER</small><h1 id="h">THE CLOSED ROOM</h1></div>
-<div class="row"><span id="who" class="note"></span><button id="signin">SIGN IN WITH GOOGLE</button><button id="signout" hidden>SIGN OUT</button></div></header>
+<header><div><small>Lab of the Unreadable · doorkeeper</small><h1 id="h">Untitled room</h1></div>
+<div class="row"><span id="who" class="note"></span><button id="signin" class="ok">Sign in with Google</button><button id="signout" hidden>Sign out</button></div></header>
 
 <main>
   <p class="note" id="msg">Sign in with the doorkeeper's Google account.</p>
 
   <div id="desk" hidden>
     <section>
-      <h2>ROOM</h2>
+      <h2>Room</h2>
       <div class="state"><span class="lamp" id="l-room"></span><span id="s-room">—</span> · <span class="lamp" id="l-door"></span><span id="s-door">—</span> · <span id="s-seats">—</span></div>
       <div class="row">
-        <label for="title">TITLE<input id="title" size="34"></label>
-        <label for="capacity">SEATS<input id="capacity" type="number" min="1" max="200" value="12" style="width:6em"></label>
-        <button id="save">SAVE</button>
+        <label for="title">Title<input id="title" size="34"></label>
+        <label for="capacity">Seats<input id="capacity" type="number" min="1" max="200" value="12" style="width:6em"></label>
+        <button id="save">Save</button>
       </div>
       <div class="row">
-        <button id="t-room" class="ok">OPEN THE ROOM</button>
-        <button id="t-door" class="ok">OPEN THE DOOR</button>
-        <button id="clear" class="no">EMPTY THE ROOM</button>
+        <button id="t-room" class="ok">Open the room</button>
+        <button id="t-door" class="ok">Open the door</button>
+        <button id="clear" class="no">Empty the room</button>
       </div>
       <p class="note">The <b>room</b> is the exhibition: when it closes, admitted visitors lose the work. The <b>door</b> only decides whether new requests can arrive. Visitor link: <span id="link" style="color:var(--fg)"></span></p>
     </section>
 
     <section>
-      <h2>REQUESTS</h2>
+      <h2>Requests</h2>
       <div class="scroll"><table>
-        <thead><tr><th>TIME</th><th>WORD</th><th>NAME</th><th>STATE</th><th></th></tr></thead>
-        <tbody id="rows"><tr><td colspan="5" class="note">No one has knocked yet.</td></tr></tbody>
+        <thead><tr><th>Time</th><th>Name</th><th>State</th><th></th></tr></thead>
+        <tbody id="rows"><tr><td colspan="4" class="note">No requests yet.</td></tr></tbody>
       </table></div>
     </section>
 
     <section>
-      <h2>WORK ON SHOW</h2>
+      <h2>Work on show</h2>
       <p class="note" id="w-state">No work hung.</p>
       <div class="row">
-        <label for="file">SELF-CONTAINED HTML FILE (max 950 KB; images and sounds embedded)<input id="file" type="file" accept=".html,.htm,text/html"></label>
-        <button id="hang" class="ok">HANG THE WORK</button>
+        <label for="file">Self-contained HTML file, max 950 KB<input id="file" type="file" accept=".html,.htm,text/html"></label>
+        <button id="hang" class="ok">Hang the work</button>
       </div>
     </section>
   </div>
@@ -110,33 +117,33 @@ const admittedCount = () => requests.filter(r => r.status === 'admitted').length
 const capacity = () => Number(room.capacity) || 12;
 
 function paintRoom(){
-  $('h').textContent = (room.title || 'THE CLOSED ROOM').toUpperCase();
+  $('h').textContent = room.title || 'Untitled room';
   if (document.activeElement !== $('title')) $('title').value = room.title || '';
   if (document.activeElement !== $('capacity')) $('capacity').value = capacity();
-  $('l-room').className = 'lamp ' + (room.open ? 'on' : 'off'); $('s-room').textContent = room.open ? 'ROOM OPEN' : 'ROOM CLOSED';
-  $('l-door').className = 'lamp ' + (room.door ? 'on' : 'off'); $('s-door').textContent = room.door ? 'DOOR OPEN' : 'DOOR CLOSED';
-  $('t-room').textContent = room.open ? 'CLOSE THE ROOM' : 'OPEN THE ROOM'; $('t-room').className = room.open ? 'no' : 'ok';
-  $('t-door').textContent = room.door ? 'CLOSE THE DOOR' : 'OPEN THE DOOR'; $('t-door').className = room.door ? 'no' : 'ok';
+  $('l-room').className = 'lamp ' + (room.open ? 'on' : 'off'); $('s-room').textContent = room.open ? 'room open' : 'room closed';
+  $('l-door').className = 'lamp ' + (room.door ? 'on' : 'off'); $('s-door').textContent = room.door ? 'door open' : 'door closed';
+  $('t-room').textContent = room.open ? 'Close the room' : 'Open the room'; $('t-room').className = room.open ? 'no' : 'ok';
+  $('t-door').textContent = room.door ? 'Close the door' : 'Open the door'; $('t-door').className = room.door ? 'no' : 'ok';
   paintSeats();
 }
-function paintSeats(){ $('s-seats').textContent = `${admittedCount()} OF ${capacity()} SEATS`; }
+function paintSeats(){ $('s-seats').textContent = `${admittedCount()} / ${capacity()} seats`; }
 
 function paintRows(){
   paintSeats();
   const full = admittedCount() >= capacity();
   const tb = $('rows'); tb.innerHTML = '';
-  if (!requests.length) { tb.innerHTML = '<tr><td colspan="5" class="note">No one has knocked yet.</td></tr>'; return; }
+  if (!requests.length) { tb.innerHTML = '<tr><td colspan="4" class="note">No requests yet.</td></tr>'; return; }
   for (const r of requests) {
     const tr = document.createElement('tr');
     const t = r.ts?.toDate ? r.ts.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '…';
-    const cells = [t, r.word, r.name || '—'];
-    cells.forEach((c, i) => { const td = document.createElement('td'); td.textContent = c; if (i === 1) td.className = 'word'; tr.append(td); });
-    const st = document.createElement('td'); st.innerHTML = `<span class="tag ${r.status}">${r.status.toUpperCase()}</span>`; tr.append(st);
+    const cells = [t, r.name || '—'];
+    cells.forEach((c, i) => { const td = document.createElement('td'); td.textContent = c; if (i === 1) td.className = 'name'; tr.append(td); });
+    const st = document.createElement('td'); st.innerHTML = `<span class="tag ${r.status}">${r.status}</span>`; tr.append(st);
     const act = document.createElement('td'); act.className = 'row';
     const mk = (label, cls, fn, dis) => { const b = document.createElement('button'); b.textContent = label; b.className = cls; b.disabled = !!dis; b.onclick = fn; act.append(b); };
-    if (r.status !== 'admitted') mk('ADMIT', 'ok', () => setStatus(r.id, 'admitted'), full);
-    if (r.status !== 'refused') mk(r.status === 'admitted' ? 'SEND OUT' : 'REFUSE', 'no', () => setStatus(r.id, 'refused'));
-    mk('REMOVE', '', () => deleteDoc(doc(reqCol, r.id)).catch(err));
+    if (r.status !== 'admitted') mk('Admit', 'ok', () => setStatus(r.id, 'admitted'), full);
+    if (r.status !== 'refused') mk(r.status === 'admitted' ? 'Send out' : 'Refuse', 'no', () => setStatus(r.id, 'refused'));
+    mk('Remove', '', () => deleteDoc(doc(reqCol, r.id)).catch(err));
     tr.append(act); tb.append(tr);
   }
 }
