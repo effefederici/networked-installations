@@ -74,8 +74,13 @@ td.name{font-size:17px}
       <p class="note" id="w-state">No work hung.</p>
       <div class="row">
         <label for="file">Self-contained HTML file, max 950 KB<input id="file" type="file" accept=".html,.htm,text/html"></label>
-        <button id="hang" class="ok">Hang the work</button>
+        <button id="hang" class="ok">Hang the file</button>
       </div>
+      <div class="row">
+        <label for="url">Or the address of an installation (e.g. on GitHub)<input id="url" type="url" size="52" placeholder="https://effefederici.github.io/networked-installations/…/"></label>
+        <button id="hang-url" class="ok">Show this address</button>
+      </div>
+      <p class="note">A file is delivered only to admitted visitors. An address is only passed to them: the page behind it stays public wherever it is hosted.</p>
     </section>
   </div>
 </main>
@@ -168,13 +173,19 @@ $('clear').onclick = async () => {
   await b.commit().catch(err);
 };
 
-function paintWork(w){ $('w-state').textContent = w ? `On show: ${w.name} (${Math.round(w.html.length/1024)} KB)` : 'No work hung.'; }
+function paintWork(w){ $('w-state').textContent = !w ? 'No work hung.' : w.url ? `On show (address): ${w.url}` : `On show (file): ${w.name} (${Math.round(w.html.length/1024)} KB)`; }
 $('hang').onclick = async () => {
   const f = $('file').files[0]; if (!f) return;
   const html = await f.text();
   if (new Blob([html]).size > 950000) { err({message: 'The file is larger than 950 KB: embed fewer or lighter assets.'}); return; }
   await setDoc(workRef, {html, name: f.name, updated: serverTimestamp()}).catch(err);
   paintWork({html, name: f.name});
+};
+$('hang-url').onclick = async () => {
+  const url = $('url').value.trim();
+  if (!/^https:\/\/\S+$/.test(url)) { err({message: 'Write a full address beginning with https://'}); return; }
+  await setDoc(workRef, {url, name: url, updated: serverTimestamp()}).catch(err);
+  paintWork({url});
 };
 </script>
 </body></html>
