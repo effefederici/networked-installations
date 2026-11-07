@@ -29,6 +29,8 @@ button:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
 .pulse{animation:p 2.6s ease-in-out infinite}@keyframes p{50%{opacity:.4}}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
 #work{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+#hint{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#bdbdba;background:rgba(0,0,0,.55);padding:8px 12px;pointer-events:none;transition:opacity 1.2s}
+#hint.gone{opacity:0}
 body.inside header,body.inside footer{display:none}
 [hidden]{display:none!important}
 </style></head><body>
@@ -67,6 +69,7 @@ body.inside header,body.inside footer{display:none}
   </section>
 
   <iframe id="work" title="Work on show" sandbox="allow-scripts" allow="fullscreen; autoplay" hidden></iframe>
+  <div id="hint" hidden>click the work to begin</div>
 </main>
 
 <footer><span id="seats"></span><span>federicofederici.net</span></footer>
@@ -79,7 +82,7 @@ const {getFirestore, doc, onSnapshot, setDoc, getDoc, serverTimestamp} = await i
 
 const $ = id => document.getElementById(id);
 const views = ['v-closed','v-door','v-wait','v-refused','v-error'];
-function show(v){views.forEach(x=>$(x).hidden = x!==v); $('work').hidden = v!=='work'; document.body.classList.toggle('inside', v==='work');}
+function show(v){views.forEach(x=>$(x).hidden = x!==v); $('work').hidden = v!=='work'; $('hint').hidden = v!=='work'; document.body.classList.toggle('inside', v==='work');}
 function fail(msg){$('err').textContent = msg; show('v-error');}
 
 const roomId = new URLSearchParams(location.search).get('room') || DEFAULT_ROOM;
@@ -95,10 +98,16 @@ async function loadWork(){
   try {
     const snap = await getDoc(doc(db, 'rooms', roomId, 'private', 'work'));
     if (!snap.exists()) { fail('The room is open, but no work has been hung yet.'); return; }
-    $('work').srcdoc = snap.data().html; loadedWork = true; show('work');
+    const w = snap.data();
+    if (w.url) { $('work').removeAttribute('srcdoc'); $('work').src = w.url; }
+    else { $('work').srcdoc = w.html; }
+    loadedWork = true; $('hint').classList.remove('gone'); show('work');
+    setTimeout(() => $('hint').classList.add('gone'), 8000);
   } catch(e){ fail('The work could not be delivered (' + e.code + ').'); }
 }
 function unloadWork(){ $('work').removeAttribute('srcdoc'); $('work').src = 'about:blank'; loadedWork = false; }
+// The page loses focus when the visitor clicks into the work: the hint has done its job.
+addEventListener('blur', () => $('hint').classList.add('gone'));
 
 function decide(){
   const title = room?.title || 'Untitled room';
