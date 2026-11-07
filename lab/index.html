@@ -1,64 +1,67 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The Closed Room</title>
+<title>Lab of the Unreadable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
-:root{color-scheme:dark;--bg:#090d10;--fg:#dce7e3;--dim:#83938f;--line:#33433e;--accent:#b6e4c9;--shut:#c86b55}
+/* Lab of the Unreadable: a neutral room for any work. One typeface, no colour except the state lamp. */
+:root{--bg:#f3f3f1;--fg:#141414;--dim:#7a7a78;--line:#d9d9d5;--open:#141414;--shut:#b5452f;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0e0e0e;--fg:#ececea;--dim:#8a8a87;--line:#2a2a28;--open:#ececea;--shut:#d0644c}}
 *{box-sizing:border-box}html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;display:flex;flex-direction:column}
-header{padding:20px 3vw;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
-small,.meta{color:var(--dim);font-size:12px;letter-spacing:.12em}
-h1{font-size:clamp(17px,2vw,27px);font-weight:500;letter-spacing:.14em;margin:0}
-.lamp{display:inline-block;width:.65em;height:.65em;border-radius:50%;background:var(--dim);margin-right:.6em;vertical-align:.02em}
-.lamp.open{background:var(--accent)}.lamp.shut{background:var(--shut)}
-main{flex:1;display:grid;place-items:center;padding:32px 3vw;position:relative}
-.panel{max-width:520px;width:100%;display:grid;gap:18px}
-.panel p{margin:0;color:var(--dim);line-height:1.8;font-size:14px}
-label{display:grid;gap:6px;font-size:12px;letter-spacing:.12em;color:var(--dim)}
-input{background:#0f1714;border:1px solid #52675d;color:var(--fg);padding:11px 12px;font:inherit;font-size:15px}
-input:focus,button:focus{outline:1px solid var(--accent);outline-offset:2px}
-button{background:#15211d;border:1px solid var(--accent);color:var(--accent);padding:11px 14px;cursor:pointer;font:inherit;letter-spacing:.12em;justify-self:start}
-button:hover{background:#243a31}button:disabled{opacity:.4;cursor:default}
-.big{font-size:clamp(20px,3vw,34px);letter-spacing:.14em;color:var(--fg);margin:0}
-.pulse{animation:p 2.4s ease-in-out infinite}@keyframes p{50%{opacity:.35}}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-weight:300;display:flex;flex-direction:column}
+header,footer{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;padding:22px max(16px,4vw)}
+.lab{font-size:13px;letter-spacing:.02em}
+.meta,footer{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+.lamp{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dim);margin-right:8px;vertical-align:1px}
+.lamp.open{background:var(--open)}.lamp.shut{background:var(--shut)}
+main{flex:1;display:grid;place-items:center;padding:24px max(16px,4vw);position:relative}
+.panel{width:100%;max-width:440px;display:grid;gap:20px}
+h1{font-weight:300;font-size:clamp(28px,4.4vw,46px);line-height:1.08;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.panel p{margin:0;color:var(--dim);font-size:15px;line-height:1.6}
+form{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+input{flex:1 1 220px;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--fg);color:var(--fg);padding:10px 2px;font:inherit;font-size:17px}
+input::placeholder{color:var(--dim)}
+input:focus{outline:none;border-bottom-width:2px}
+button{background:var(--fg);color:var(--bg);border:0;padding:10px 18px;font:inherit;font-size:14px;letter-spacing:.04em;cursor:pointer}
+button:disabled{opacity:.35;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+.pulse{animation:p 2.6s ease-in-out infinite}@keyframes p{50%{opacity:.4}}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
 #work{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
-footer{border-top:1px solid var(--line);padding:12px 3vw;color:var(--dim);font-size:11px;letter-spacing:.12em;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 body.inside header,body.inside footer{display:none}
 [hidden]{display:none!important}
 </style></head><body>
-<header><div><small>LABORATORY OF UNREADABLE PHENOMENA / CLOSED ROOM</small><h1 id="title">—</h1></div>
-<div class="meta"><span class="lamp" id="lamp"></span><span id="state">CONNECTING</span></div></header>
+<header><span class="lab">Lab of the Unreadable</span><span class="meta"><span class="lamp" id="lamp"></span><span id="state">connecting</span></span></header>
 
 <main>
   <section class="panel" id="v-closed" hidden>
-    <p class="big">The room is closed.</p>
+    <h1 id="closed-title">Closed.</h1>
     <p id="closed-note">Nothing is on show at the moment.</p>
   </section>
 
   <section class="panel" id="v-door" hidden>
-    <p class="big">Admission by request.</p>
-    <p>Leave one word at the door. The doorkeeper reads it and decides who enters. Seats are few; nothing is recorded.</p>
-    <form id="ask" class="panel" autocomplete="off">
-      <label for="word">ONE WORD
-        <input id="word" maxlength="40" required></label>
-      <label for="name">NAME (optional)
-        <input id="name" maxlength="60"></label>
-      <button type="submit" id="send">KNOCK</button>
+    <h1 id="door-title">—</h1>
+    <p>Admission by request. Leave your name; the doorkeeper decides who enters. Seats are few, and nothing is recorded.</p>
+    <form id="ask" autocomplete="off">
+      <label for="name" hidden>Name</label>
+      <input id="name" maxlength="60" placeholder="Your name" required>
+      <button type="submit" id="send">Ask to enter</button>
     </form>
   </section>
 
   <section class="panel" id="v-wait" hidden>
-    <p class="big pulse">Awaiting admission.</p>
-    <p>Your word has reached the doorkeeper: <span id="your-word" style="color:var(--fg)"></span>. Keep this page open; it opens by itself.</p>
+    <h1 class="pulse">Waiting.</h1>
+    <p><span id="your-name" style="color:var(--fg)"></span>, your request has reached the doorkeeper. Keep this page open: it opens by itself.</p>
   </section>
 
   <section class="panel" id="v-refused" hidden>
-    <p class="big">The door stays closed.</p>
+    <h1>Not admitted.</h1>
     <p>The doorkeeper has not admitted this request.</p>
   </section>
 
   <section class="panel" id="v-error" hidden>
-    <p class="big">The instrument cannot connect.</p>
+    <h1>No connection.</h1>
     <p id="err"></p>
   </section>
 
@@ -84,55 +87,54 @@ try { app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAut
 catch(e){ fail('Configuration missing: fill in firebase-config.js.'); throw e; }
 
 let room = null, req = null, uid = null, loadedWork = false;
-
-function setLamp(kind, text){ $('lamp').className = 'lamp ' + kind; $('state').textContent = text; }
+const setLamp = (kind, text) => { $('lamp').className = 'lamp ' + kind; $('state').textContent = text; };
 
 async function loadWork(){
   if (loadedWork) return;
   try {
     const snap = await getDoc(doc(db, 'rooms', roomId, 'private', 'work'));
-    if (!snap.exists()) { fail('The room is open but no work has been hung yet.'); return; }
+    if (!snap.exists()) { fail('The room is open, but no work has been hung yet.'); return; }
     $('work').srcdoc = snap.data().html; loadedWork = true; show('work');
-  } catch(e){ fail('The work could not be delivered: ' + e.code); }
+  } catch(e){ fail('The work could not be delivered (' + e.code + ').'); }
 }
 function unloadWork(){ $('work').removeAttribute('srcdoc'); $('work').src = 'about:blank'; loadedWork = false; }
 
 function decide(){
+  const title = room?.title || 'Untitled room';
+  $('door-title').textContent = title;
+  document.title = title + ' · Lab of the Unreadable';
   if (!room || !room.open) {
-    unloadWork(); setLamp('shut', 'ROOM CLOSED');
+    unloadWork(); setLamp('shut', 'closed');
+    $('closed-title').textContent = req && req.status === 'admitted' ? 'Ended.' : 'Closed.';
     $('closed-note').textContent = req && req.status === 'admitted' ? 'The exhibition has ended. Thank you for coming.' : 'Nothing is on show at the moment.';
-    show('v-closed'); return;
+    $('seats').textContent = ''; show('v-closed'); return;
   }
-  const seats = `${room.admitted ?? 0} OF ${room.capacity ?? '?'} SEATS TAKEN`;
-  $('seats').textContent = seats;
-  if (req && req.status === 'admitted') { setLamp('open', 'ADMITTED'); loadWork(); return; }
+  $('seats').textContent = `${room.admitted ?? 0} / ${room.capacity ?? '?'} seats`;
+  if (req && req.status === 'admitted') { setLamp('open', 'admitted'); loadWork(); return; }
   unloadWork();
-  if (req && req.status === 'refused') { setLamp('shut', 'NOT ADMITTED'); show('v-refused'); return; }
-  if (req && req.status === 'waiting') { setLamp('', 'WAITING'); $('your-word').textContent = '“' + req.word + '”'; show('v-wait'); return; }
-  if (!room.door) { setLamp('shut', 'DOOR CLOSED'); $('closed-note').textContent = 'The door is closed: the room is full or the exhibition has begun.'; show('v-closed'); return; }
-  setLamp('open', 'DOOR OPEN'); show('v-door');
+  if (req && req.status === 'refused') { setLamp('shut', 'not admitted'); show('v-refused'); return; }
+  if (req && req.status === 'waiting') { setLamp('', 'waiting'); $('your-name').textContent = req.name; show('v-wait'); return; }
+  if (!room.door) { setLamp('shut', 'door closed'); $('closed-title').textContent = 'Full.'; $('closed-note').textContent = 'The door is closed: the room is full or the exhibition has begun.'; show('v-closed'); return; }
+  setLamp('open', 'door open'); show('v-door');
 }
 
-onSnapshot(doc(db, 'rooms', roomId), s => {
-  room = s.exists() ? s.data() : null;
-  $('title').textContent = room?.title || roomId.toUpperCase();
-  decide();
-}, e => fail('Room unavailable: ' + e.code));
+onSnapshot(doc(db, 'rooms', roomId), s => { room = s.exists() ? s.data() : null; decide(); },
+  e => fail('Room unavailable (' + e.code + ').'));
 
 onAuthStateChanged(auth, user => {
   if (!user) return;
   uid = user.uid;
   onSnapshot(doc(db, 'rooms', roomId, 'requests', uid), s => { req = s.exists() ? s.data() : null; decide(); },
-    e => fail('Request unavailable: ' + e.code));
+    e => fail('Request unavailable (' + e.code + ').'));
 });
-signInAnonymously(auth).catch(e => fail('Anonymous sign-in failed: ' + e.code + '. Enable Anonymous sign-in in Firebase Authentication.'));
+signInAnonymously(auth).catch(e => fail('Anonymous sign-in failed (' + e.code + '). Enable Anonymous sign-in in Firebase Authentication.'));
 
 $('ask').addEventListener('submit', async ev => {
   ev.preventDefault();
-  const word = $('word').value.trim(), name = $('name').value.trim();
-  if (!word || !uid) return;
+  const name = $('name').value.trim();
+  if (!name || !uid) return;
   $('send').disabled = true;
-  try { await setDoc(doc(db, 'rooms', roomId, 'requests', uid), {word, name, status:'waiting', ts: serverTimestamp()}); }
+  try { await setDoc(doc(db, 'rooms', roomId, 'requests', uid), {name, status:'waiting', ts: serverTimestamp()}); }
   catch(e){ $('send').disabled = false; fail('The request was not accepted (' + e.code + '): the door may have just closed.'); }
 });
 </script>
