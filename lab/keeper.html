@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Doorkeeper</title>
+<style>
+:root{color-scheme:dark;--bg:#090d10;--fg:#dce7e3;--dim:#83938f;--line:#33433e;--accent:#b6e4c9;--shut:#c86b55}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:14px}
+header{padding:18px 3vw;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+small{color:var(--dim);font-size:12px;letter-spacing:.12em}
+h1{font-size:20px;font-weight:500;letter-spacing:.14em;margin:0}
+main{padding:24px 3vw 60px;display:grid;gap:28px;max-width:1100px}
+section{border-top:1px solid var(--line);padding-top:16px;display:grid;gap:14px}
+h2{font-size:12px;letter-spacing:.16em;color:var(--dim);font-weight:400;margin:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+label{display:grid;gap:6px;font-size:11px;letter-spacing:.12em;color:var(--dim)}
+input{background:#0f1714;border:1px solid #52675d;color:var(--fg);padding:9px 10px;font:inherit}
+button{background:#15211d;border:1px solid #52675d;color:var(--fg);padding:9px 12px;cursor:pointer;font:inherit;letter-spacing:.08em}
+button:hover{background:#243a31}button:disabled{opacity:.35;cursor:default}
+button.ok{border-color:var(--accent);color:var(--accent)}button.no{border-color:var(--shut);color:var(--shut)}
+.state{font-size:16px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.lamp{display:inline-block;width:.65em;height:.65em;border-radius:50%;margin-right:.5em;background:var(--dim)}
+.lamp.on{background:var(--accent)}.lamp.off{background:var(--shut)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;letter-spacing:.12em;color:var(--dim);font-weight:400}
+td.word{font-size:16px}
+.tag{font-size:11px;letter-spacing:.12em;padding:2px 6px;border:1px solid var(--line)}
+.tag.waiting{color:var(--fg)}.tag.admitted{color:var(--accent);border-color:var(--accent)}.tag.refused{color:var(--shut);border-color:var(--shut)}
+.scroll{overflow-x:auto}
+.note{color:var(--dim);line-height:1.7;margin:0}
+[hidden]{display:none!important}
+</style></head><body>
+<header><div><small>LABORATORY OF UNREADABLE PHENOMENA / DOORKEEPER</small><h1 id="h">THE CLOSED ROOM</h1></div>
+<div class="row"><span id="who" class="note"></span><button id="signin">SIGN IN WITH GOOGLE</button><button id="signout" hidden>SIGN OUT</button></div></header>
+
+<main>
+  <p class="note" id="msg">Sign in with the doorkeeper's Google account.</p>
+
+  <div id="desk" hidden>
+    <section>
+      <h2>ROOM</h2>
+      <div class="state"><span class="lamp" id="l-room"></span><span id="s-room">—</span> · <span class="lamp" id="l-door"></span><span id="s-door">—</span> · <span id="s-seats">—</span></div>
+      <div class="row">
+        <label for="title">TITLE<input id="title" size="34"></label>
+        <label for="capacity">SEATS<input id="capacity" type="number" min="1" max="200" value="12" style="width:6em"></label>
+        <button id="save">SAVE</button>
+      </div>
+      <div class="row">
+        <button id="t-room" class="ok">OPEN THE ROOM</button>
+        <button id="t-door" class="ok">OPEN THE DOOR</button>
+        <button id="clear" class="no">EMPTY THE ROOM</button>
+      </div>
+      <p class="note">The <b>room</b> is the exhibition: when it closes, admitted visitors lose the work. The <b>door</b> only decides whether new requests can arrive. Visitor link: <span id="link" style="color:var(--fg)"></span></p>
+    </section>
+
+    <section>
+      <h2>REQUESTS</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>TIME</th><th>WORD</th><th>NAME</th><th>STATE</th><th></th></tr></thead>
+        <tbody id="rows"><tr><td colspan="5" class="note">No one has knocked yet.</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <section>
+      <h2>WORK ON SHOW</h2>
+      <p class="note" id="w-state">No work hung.</p>
+      <div class="row">
+        <label for="file">SELF-CONTAINED HTML FILE (max 950 KB; images and sounds embedded)<input id="file" type="file" accept=".html,.htm,text/html"></label>
+        <button id="hang" class="ok">HANG THE WORK</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script type="module">
+import {firebaseConfig, KEEPER_EMAIL, DEFAULT_ROOM, SDK} from './firebase-config.js';
+const {initializeApp} = await import(`${SDK}/firebase-app.js`);
+const {getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged} = await import(`${SDK}/firebase-auth.js`);
+const {getFirestore, doc, collection, onSnapshot, setDoc, updateDoc, deleteDoc, getDoc, getDocs, writeBatch, query, orderBy, serverTimestamp} = await import(`${SDK}/firebase-firestore.js`);
+
+const $ = id => document.getElementById(id);
+const app = initializeApp(firebaseConfig), db = getFirestore(app), auth = getAuth(app);
+const roomId = new URLSearchParams(location.search).get('room') || DEFAULT_ROOM;
+const roomRef = doc(db, 'rooms', roomId), workRef = doc(db, 'rooms', roomId, 'private', 'work');
+const reqCol = collection(db, 'rooms', roomId, 'requests');
+$('link').textContent = location.href.replace(/keeper\.html.*$/, '') + (roomId === DEFAULT_ROOM ? '' : '?room=' + roomId);
+
+let room = {}, requests = [], unsub = [];
+
+$('signin').onclick = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => $('msg').textContent = 'Sign-in failed: ' + e.code);
+$('signout').onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  unsub.forEach(f => f()); unsub = [];
+  const keeper = user && user.email === KEEPER_EMAIL;
+  $('signin').hidden = !!user; $('signout').hidden = !user;
+  $('who').textContent = user ? user.email : '';
+  $('desk').hidden = !keeper;
+  $('msg').hidden = keeper;
+  if (user && !keeper) $('msg').textContent = 'This account is not the doorkeeper.';
+  if (!keeper) return;
+  unsub.push(onSnapshot(roomRef, s => { room = s.exists() ? s.data() : {}; paintRoom(); }, err));
+  unsub.push(onSnapshot(query(reqCol, orderBy('ts')), s => { requests = s.docs.map(d => ({id:d.id, ...d.data()})); paintRows(); syncCount(); }, err));
+  getDoc(workRef).then(s => paintWork(s.exists() ? s.data() : null)).catch(err);
+});
+function err(e){ $('msg').hidden = false; $('msg').textContent = 'Error: ' + (e.code || e.message); }
+
+const admittedCount = () => requests.filter(r => r.status === 'admitted').length;
+const capacity = () => Number(room.capacity) || 12;
+
+function paintRoom(){
+  $('h').textContent = (room.title || 'THE CLOSED ROOM').toUpperCase();
+  if (document.activeElement !== $('title')) $('title').value = room.title || '';
+  if (document.activeElement !== $('capacity')) $('capacity').value = capacity();
+  $('l-room').className = 'lamp ' + (room.open ? 'on' : 'off'); $('s-room').textContent = room.open ? 'ROOM OPEN' : 'ROOM CLOSED';
+  $('l-door').className = 'lamp ' + (room.door ? 'on' : 'off'); $('s-door').textContent = room.door ? 'DOOR OPEN' : 'DOOR CLOSED';
+  $('t-room').textContent = room.open ? 'CLOSE THE ROOM' : 'OPEN THE ROOM'; $('t-room').className = room.open ? 'no' : 'ok';
+  $('t-door').textContent = room.door ? 'CLOSE THE DOOR' : 'OPEN THE DOOR'; $('t-door').className = room.door ? 'no' : 'ok';
+  paintSeats();
+}
+function paintSeats(){ $('s-seats').textContent = `${admittedCount()} OF ${capacity()} SEATS`; }
+
+function paintRows(){
+  paintSeats();
+  const full = admittedCount() >= capacity();
+  const tb = $('rows'); tb.innerHTML = '';
+  if (!requests.length) { tb.innerHTML = '<tr><td colspan="5" class="note">No one has knocked yet.</td></tr>'; return; }
+  for (const r of requests) {
+    const tr = document.createElement('tr');
+    const t = r.ts?.toDate ? r.ts.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '…';
+    const cells = [t, r.word, r.name || '—'];
+    cells.forEach((c, i) => { const td = document.createElement('td'); td.textContent = c; if (i === 1) td.className = 'word'; tr.append(td); });
+    const st = document.createElement('td'); st.innerHTML = `<span class="tag ${r.status}">${r.status.toUpperCase()}</span>`; tr.append(st);
+    const act = document.createElement('td'); act.className = 'row';
+    const mk = (label, cls, fn, dis) => { const b = document.createElement('button'); b.textContent = label; b.className = cls; b.disabled = !!dis; b.onclick = fn; act.append(b); };
+    if (r.status !== 'admitted') mk('ADMIT', 'ok', () => setStatus(r.id, 'admitted'), full);
+    if (r.status !== 'refused') mk(r.status === 'admitted' ? 'SEND OUT' : 'REFUSE', 'no', () => setStatus(r.id, 'refused'));
+    mk('REMOVE', '', () => deleteDoc(doc(reqCol, r.id)).catch(err));
+    tr.append(act); tb.append(tr);
+  }
+}
+function setStatus(id, status){ updateDoc(doc(reqCol, id), {status}).catch(err); }
+
+// Visitors cannot read the list, so the room document carries the count; the door closes when the room is full.
+let lastCount = -1;
+function syncCount(){
+  const n = admittedCount();
+  if (n === lastCount) return; lastCount = n;
+  const patch = {admitted: n};
+  if (n >= capacity() && room.door) patch.door = false;
+  setDoc(roomRef, patch, {merge:true}).catch(err);
+}
+
+$('save').onclick = () => setDoc(roomRef, {title: $('title').value.trim(), capacity: Math.max(1, Number($('capacity').value) || 12)}, {merge:true}).catch(err);
+$('t-room').onclick = () => setDoc(roomRef, {open: !room.open, ...(room.open ? {door:false} : {})}, {merge:true}).catch(err);
+$('t-door').onclick = () => setDoc(roomRef, {door: !room.door}, {merge:true}).catch(err);
+$('clear').onclick = async () => {
+  const s = await getDocs(reqCol); const b = writeBatch(db);
+  s.forEach(d => b.delete(d.ref)); b.set(roomRef, {admitted:0}, {merge:true});
+  await b.commit().catch(err);
+};
+
+function paintWork(w){ $('w-state').textContent = w ? `On show: ${w.name} (${Math.round(w.html.length/1024)} KB)` : 'No work hung.'; }
+$('hang').onclick = async () => {
+  const f = $('file').files[0]; if (!f) return;
+  const html = await f.text();
+  if (new Blob([html]).size > 950000) { err({message: 'The file is larger than 950 KB: embed fewer or lighter assets.'}); return; }
+  await setDoc(workRef, {html, name: f.name, updated: serverTimestamp()}).catch(err);
+  paintWork({html, name: f.name});
+};
+</script>
+</body></html>
