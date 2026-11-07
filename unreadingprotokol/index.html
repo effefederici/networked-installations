@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Unreading Protocol — Failed Lock Edition</title>
+<style>
+:root{color-scheme:dark;--bg:#090d10;--fg:#dce7e3;--dim:#83938f;--line:#33433e;--accent:#b6e4c9}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}header{padding:20px 3vw;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center}h1{font-size:clamp(17px,2vw,27px);font-weight:500;letter-spacing:.14em;margin:0}small,.meta{color:var(--dim);font-size:12px;letter-spacing:.12em}.layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);min-height:67vh}.field{position:relative;overflow:hidden;min-height:58vh;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--line);padding:35px}.glyph{white-space:pre-wrap;text-align:center;line-height:1.55;font-size:clamp(18px,3vw,42px);letter-spacing:.14em;max-width:100%;word-break:break-word;transition:opacity .5s,filter .5s,transform .5s}.scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 4px,#a5ffe004 5px 6px)}.corner{position:absolute;top:20px;left:24px;color:var(--dim);font-size:11px}.side{padding:30px;display:flex;flex-direction:column;gap:25px}.measure{border-top:1px solid var(--line);padding-top:14px}.measure b{display:block;font-size:clamp(20px,2.2vw,31px);font-weight:400;margin-top:8px;color:var(--accent)}.log{font-size:12px;line-height:1.8;color:var(--dim);overflow:auto;max-height:200px}.log div:last-child{color:var(--fg)}footer{border-top:1px solid var(--line);padding:18px 3vw;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.controls{display:flex;gap:8px;flex-wrap:wrap}button{background:#15211d;border:1px solid #52675d;color:var(--fg);padding:10px 13px;cursor:pointer;font:inherit}button:hover{background:#243a31}#listen{border-color:var(--accent);color:var(--accent)}#listen.on{background:#243a31}.stage{color:var(--accent);letter-spacing:.13em}.guide{max-width:900px;padding:26px 3vw 50px;color:var(--dim);line-height:1.7}.guide summary{cursor:pointer;color:var(--fg)}.guide pre{white-space:pre-wrap;font:inherit;color:var(--fg)}body.full .guide{display:none}body.full .controls,body.full #cue{opacity:0;pointer-events:none;transition:opacity .6s}body.full.show-controls .controls,body.full.show-controls #cue{opacity:1;pointer-events:auto}body.full header{padding-top:14px;padding-bottom:14px}@media(max-width:700px){.layout{grid-template-columns:1fr}.field{border-right:0;border-bottom:1px solid var(--line);min-height:44vh}.side{padding:20px;gap:10px}.measure{display:inline-block}.log{max-height:90px}}
+#asemic-image{display:none;max-width:42%;max-height:52vh;object-fit:contain;filter:grayscale(1);opacity:.9;transition:opacity 2s,filter 2s}#asemic-image.visible{display:block}#glyph.hidden{display:none}
+
+#grain-canvas,#scope-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}#grain-canvas{z-index:0;opacity:.7}#scope-canvas{z-index:2;opacity:.92}#asemic-image{position:relative;z-index:1}#glyph{position:relative;z-index:1} .corner{z-index:3}.scan{z-index:3} .field{isolation:isolate}
+</style></head><body>
+<header><div><small>LABORATORY OF UNREADABLE PHENOMENA / LIVE DOCUMENT</small><h1>THE UN_READING PROTOCOL</h1></div><div class="meta">EXPERIMENT NO. <span id="cycle">000</span><br>STATUS: <span id="status">STANDBY</span></div></header>
+<div class="layout"><main class="field"><canvas id="grain-canvas" aria-hidden="true"></canvas><canvas id="scope-canvas" aria-hidden="true"></canvas><div class="corner" id="fieldlabel">SPECIMEN / UNIDENTIFIED</div><img id="asemic-image" src="asemic.png" alt="Asemic specimen"><div class="glyph" id="glyph" aria-live="off">∅</div><div class="scan"></div></main><aside class="side"><div class="measure"><small>SIGNAL INTEGRITY</small><b id="signal">UNDETERMINED</b></div><div class="measure"><small>SOURCE LOCATION</small><b id="source">NOT FOUND</b></div><div class="measure"><small>SEMANTIC RESIDUE</small><b id="residue">0.000</b></div><div><small>OBSERVATION LOG</small><div class="log" id="log"><div>00 / Awaiting operator input.</div></div></div></aside></div>
+<footer><div><div class="stage" id="stage">00 / CALIBRATION</div><small id="cue">Press SPACE to advance at your spoken cue.</small></div><div class="controls"><button id="listen">LISTEN</button><button id="audio-toggle">AUDIO: OFF</button><button id="back">← BACK</button><button id="next">NEXT →</button><button id="reset">RESET</button><button id="fullscreen">FULLSCREEN</button></div></footer>
+<section class="guide"><details><summary>PERFORMANCE SCORE / DOCUMENTATION (click to expand; hidden in fullscreen)</summary><p>Two modes. PERFORM: read the text aloud yourself and press SPACE at the indicated spoken cues. LISTEN: press LISTEN and the author's reading drives the instrument by itself; press SPACE at any moment to stop the recording and continue the protocol yourself from the current stage. Place unreadingprotocol.mp3 beside this HTML file. The interface is a fictional measurement apparatus; its readings are poetic, not physical measurements. Press ← to go back, R to reset, F for fullscreen. On Zoom, share this browser window or screen. Disable notification popups. Place asemic.png beside this HTML file. Click AUDIO: OFF to enable browser audio before performing; share computer audio in Zoom. Stage 07 keeps its deliberately silent audio, with a nearly flat oscilloscope trace and occasional failed lock-on spikes. Stage 08 introduces fragmented multilingual synthetic speech if audio is enabled. Keep your computer output volume moderate; test the mix with a listener.</p><pre id="score"></pre><p>Authored for live performance. All graphics and transitions run locally, without network requests or microphone access. Final stage uses browser speech synthesis, with available voices varying by system.</p></details></section>
+<script>
+const steps=[
+{title:'CALIBRATION',cue:'Before: “this is not a text”',glyph:'∅',signal:'UNDETERMINED',source:'NOT FOUND',residue:'0.000',status:'STANDBY',log:'Instrument awaiting language. Metric without words.'},
+{title:'MEASUREMENT',cue:'At: “the object under investigation is a sentence”',glyph:'│  ─  │  ─  ∅  ─  │',signal:'0.000 ± ∞',source:'SENTENCE',residue:'0.001',status:'MEASURING',log:'Sentence without measurable boundaries. Curvature: zero.'},
+{title:'DETECTION',cue:'At: “here is where we have detected a signal”',glyph:'SIGNAL\n    / / /\nSOURCE ?',signal:'SNR 0 dB',source:'ABSENT',residue:'0.013',status:'OBSERVING',log:'Signal detected; source unresolved. Signal and noise equal.'},
+{title:'CONTRADICTION',cue:'At: “now that we have detected a source”',glyph:'s i g n a l\ns i g n\ns i g h\ns i\ns s s s s',signal:'LOST',source:'BEYOND HORIZON',residue:'0.089',status:'UNSTABLE',log:'Source behind horizon. Edit distance: 2, 1, 2, ?'},
+{title:'UNPRONOUNCEABLE',cue:'At: “the reconstructed characters cannot be pronounced”',glyph:'⫷  ∿  ⟟  ╳  ⊘\n↯  ⋮  ⌁  ∴  ⫸',signal:'INDEFINITE',source:'ILLEGIBLE',residue:'NaN',status:'FAILED PARSE',log:'Pronunciation required; transcription impossible.'},
+{title:'AXIOMS / UNREADING',cue:'At: “three axioms · violated”',glyph:'d(x,x) ≠ 0\nd(x,y) ≠ d(y,x)\nd(x,z) > d(x,y) + d(y,z)',signal:'RECURSIVE',source:'READER',residue:'∞ / 0',status:'LOOPING',log:'Metric axioms violated. Reader and object exchange positions.'},
+{title:'PHONETIC COLLAPSE',cue:'At: “re—re—re—”',glyph:'re re re\nra ra ra\nrrrrrrr\n—',signal:'NOISE',source:'UNKNOWN',residue:'ERR',status:'DEGRADING',log:'Language reduced to phonetic residue.'},
+{title:'NULL TRANSMISSION',cue:'At: “nothing has been transmitted”',glyph:'',signal:'ZERO',source:'ABSENT',residue:'0 / 0',status:'COMPLETE',log:'Nothing transmitted. Nothing received.'},
+{title:'REPEAT',cue:'At the whispered “repeat”. Press SPACE once more after “re-set”.',glyph:'∅\n\nreset · re-set',signal:'UNDETERMINED',source:'NOT FOUND',residue:'TRACE DETECTED',status:'RESTART PENDING',log:'Previous experiment cannot be erased.'}
+];
+// Procedural audio: granular filtered white noise, sub-bass, micro-glitches and stage transitions.
+let audioCtx, master, noiseSource, noiseFilter, noiseGain, bassOsc, bassGain;
+let audioEnabled=false, textureEnabled=true, soundTimer;
+const audioProfiles=[
+ {noise:.014,cut:1500,bass:43,low:.013,glitch:.09},
+ {noise:.021,cut:2300,bass:49,low:.014,glitch:.16},
+ {noise:.031,cut:3200,bass:54,low:.017,glitch:.28},
+ {noise:.043,cut:4500,bass:46,low:.019,glitch:.39},
+ {noise:.048,cut:5700,bass:58,low:.012,glitch:.49},
+ {noise:.040,cut:4000,bass:51,low:.018,glitch:.57},
+ {noise:.062,cut:6800,bass:39,low:.021,glitch:.83},
+ {noise:0,cut:900,bass:43,low:0,glitch:0},
+ {noise:.008,cut:1100,bass:42,low:.008,glitch:.12}
+];
+function setupAudio(){
+ if(audioCtx)return;
+ audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+ master=audioCtx.createGain();master.gain.value=0;master.connect(audioCtx.destination);
+ // Loop a fresh, uncompressed white-noise buffer; band-limit it for a fine-grained texture.
+ const buffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*2),audioCtx.sampleRate);
+ const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+ noiseSource=audioCtx.createBufferSource();noiseSource.buffer=buffer;noiseSource.loop=true;
+ noiseFilter=audioCtx.createBiquadFilter();noiseFilter.type='bandpass';noiseFilter.frequency.value=1500;noiseFilter.Q.value=.45;
+ noiseGain=audioCtx.createGain();noiseGain.gain.value=.014;
+ noiseSource.connect(noiseFilter).connect(noiseGain).connect(master);noiseSource.start();
+ bassOsc=audioCtx.createOscillator();bassOsc.type='sine';bassOsc.frequency.value=43;
+ bassGain=audioCtx.createGain();bassGain.gain.value=.013;
+ bassOsc.connect(bassGain).connect(master);bassOsc.start();
+ soundTimer=setInterval(audioMicroevents,95);
+}
+function applyAudioStage(){
+ if(!audioCtx)return;
+ const p=audioProfiles[index],t=audioCtx.currentTime;
+ noiseGain.gain.setTargetAtTime(p.noise,t,.22);
+ noiseFilter.frequency.setTargetAtTime(p.cut,t,.28);
+ bassGain.gain.setTargetAtTime(p.low,t,.25);
+ bassOsc.frequency.setTargetAtTime(p.bass,t,.3);
+}
+async function toggleAudio(){
+ setupAudio();await audioCtx.resume();audioEnabled=!audioEnabled;
+ el('audio-toggle').textContent=audioEnabled?'AUDIO: ON':'AUDIO: OFF';
+ applyAudioStage();master.gain.setTargetAtTime(audioEnabled?1:0,audioCtx.currentTime,.09);if(index===8){if(audioEnabled)startFragmentSpeech();else stopFragmentSpeech();}
+}
+function audioMicroevents(){
+ if(!audioEnabled||!audioCtx||index===7)return;
+ const p=audioProfiles[index],t=audioCtx.currentTime;
+ // Fine irregular grain: a short gate or filter excursion, not a loud static blast.
+ if(Math.random()<.37){
+  const g=Math.max(.002,p.noise*(.35+Math.random()*1.5));
+  noiseGain.gain.setValueAtTime(Math.max(.0001,noiseGain.gain.value),t);
+  noiseGain.gain.linearRampToValueAtTime(g,t+.012);
+  noiseGain.gain.setTargetAtTime(p.noise,t+.035,.025);
+ }
+ if(Math.random()<p.glitch*.10){
+  noiseFilter.frequency.setTargetAtTime(300+Math.random()*6800,t,.009);
+  noiseFilter.frequency.setTargetAtTime(p.cut,t+.06,.04);
+  if(Math.random()<.4)playClick(.012+Math.random()*.024,90+Math.random()*2800);
+ }
+}
+function playClick(duration=.07,freq=500){
+ if(!audioCtx||!audioEnabled||index===7)return;
+ const t=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+ o.type=Math.random()<.5?'triangle':'square';o.frequency.setValueAtTime(freq,t);
+ o.frequency.exponentialRampToValueAtTime(Math.max(45,freq*.35),t+duration);
+ g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.012,t+.003);
+ g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+ o.connect(g).connect(master);o.start(t);o.stop(t+duration+.01);
+}
+function transitionSound(){
+ if(!audioCtx)return;applyAudioStage();
+ if(!audioEnabled||index===7)return;
+ const t=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+ o.type=index===6?'sawtooth':'triangle';
+ const f=170+index*47+Math.random()*70;
+ o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.3,t+.23);
+ g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.034,t+.008);
+ g.gain.exponentialRampToValueAtTime(.0001,t+.25);
+ o.connect(g).connect(master);o.start(t);o.stop(t+.27);
+}
+let index=0,cycle=0,history=['00 / Awaiting operator input.'];
+// LISTEN mode: the author's reading (unreadingprotocol.mp3) advances the stages at these times (seconds).
+// The ninth cue closes stage 08 and starts the next, contaminated, experiment.
+const listenCues=[57,100,114,154,182,215,239,252,277];
+let reading=null,listening=false,cuesDone=0,listenRaf=0;
+async function startListen(){
+ if(!reading){reading=new Audio('unreadingprotocol.mp3');reading.preload='auto';reading.addEventListener('ended',()=>stopListen(true));}
+ if(!audioEnabled)await toggleAudio();
+ reset();cuesDone=0;reading.currentTime=0;
+ try{await reading.play()}catch(e){el('cue').textContent='The recording could not start: check that unreadingprotocol.mp3 sits beside this page.';return}
+ listening=true;el('listen').textContent='STOP';el('listen').classList.add('on');el('status').textContent='PLAYBACK';
+ history.push('00 / Playback: operator replaced by recording.');render();el('status').textContent='PLAYBACK';
+ const tick=()=>{if(!listening)return;
+  while(cuesDone<listenCues.length&&reading.currentTime>=listenCues[cuesDone]){cuesDone++;next();}
+  listenRaf=requestAnimationFrame(tick)};
+ tick();
+}
+function stopListen(ended){
+ if(!listening)return;listening=false;cancelAnimationFrame(listenRaf);
+ if(reading&&!ended)reading.pause();
+ el('listen').textContent='LISTEN';el('listen').classList.remove('on');
+ history.push(String(index).padStart(2,'0')+(ended?' / Playback ended. Trace retained.':' / Playback interrupted. Operator resumes.'));render();
+}
+const el=id=>document.getElementById(id);
+function render(){const s=steps[index];el('asemic-image').classList.toggle('visible',index===0);el('glyph').classList.toggle('hidden',index===0);['glyph','signal','source','residue','status'].forEach(k=>el(k).textContent=s[k]);el('stage').textContent=String(index).padStart(2,'0')+' / '+s.title;el('cue').textContent=s.cue;el('cycle').textContent=String(cycle).padStart(3,'0');el('fieldlabel').textContent=index===7?'SPECIMEN / NOT TRANSMITTED':'SPECIMEN / UNIDENTIFIED';el('log').innerHTML='';history.slice(-7).forEach(line=>{const d=document.createElement('div');d.textContent=line;el('log').append(d)});el('glyph').style.filter=index===6?'blur(1.2px)':'none';el('glyph').style.transform=index===6?'skew(-4deg)':'none';el('glyph').style.fontSize=(index===3||index===5)?'clamp(13px,1.9vw,26px)':'';el('glyph').style.letterSpacing=(index===3||index===5)?'.06em':''}
+// Fragmented multilingual voice on the final REPEAT stage. Browser TTS is
+// deliberately cut off mid-word; native TTS cannot be routed through Web Audio.
+const speechFragments=[
+ ['de-DE','Übertragung',.76],['en-GB','receiving',.54],
+ ['fr-FR','invisible',.67],['it-IT','segnale',.61],
+ ['de-DE','Störung',.57],['fr-FR','absence',.71],
+ ['en-GB','nothing',.55],['it-IT','interrotto',.64],
+ ['de-DE','Sprache',.53],['fr-FR','répéter',.66],
+ ['it-IT','vuoto',.54],['en-GB','unreadable',.63]
+];
+let speechTimers=[],speechRun=0;
+function stopFragmentSpeech(){
+ speechRun++;speechTimers.forEach(clearTimeout);speechTimers=[];
+ if('speechSynthesis' in window)window.speechSynthesis.cancel();
+}
+function startFragmentSpeech(){
+ stopFragmentSpeech();
+ if(!audioEnabled||!('speechSynthesis' in window))return;
+ const run=speechRun;
+ const synth=window.speechSynthesis;
+ const voices=synth.getVoices();
+ let offset=420;
+ speechFragments.forEach(([lang,word,fraction],i)=>{
+  const timer=setTimeout(()=>{
+   if(run!==speechRun||index!==8||!audioEnabled)return;
+   synth.cancel();
+   const u=new SpeechSynthesisUtterance(word);
+   u.lang=lang;u.rate=.66+Math.random()*.65;u.pitch=.55+Math.random()*.95;
+   u.volume=.72+Math.random()*.26; // louder voices in the last stage (max 1)
+   const voice=voices.find(v=>v.lang.toLowerCase()===lang.toLowerCase())||voices.find(v=>v.lang.toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));
+   if(voice)u.voice=voice;
+   synth.speak(u);
+   // Deliberate truncation. Exact syllable depends on installed voice/OS.
+   speechTimers.push(setTimeout(()=>{if(run===speechRun)synth.cancel()},210+fraction*360));
+  },offset);
+  speechTimers.push(timer);
+  offset+=690+Math.random()*340;
+ });
+}
+function next(){if(index===8){cycle++;index=0;history.push(String(cycle).padStart(2,'0')+' / Repetition contaminated by prior trace.')}else{index++;history.push(String(index).padStart(2,'0')+' / '+steps[index].log)}render();transitionSound();if(index===8)startFragmentSpeech();else stopFragmentSpeech()}
+function back(){stopFragmentSpeech();if(index>0)index--;render();applyAudioStage();if(index===8)startFragmentSpeech()}
+function reset(){stopFragmentSpeech();index=0;cycle=0;history=['00 / Awaiting operator input.'];render();applyAudioStage()}
+el('listen').onclick=()=>listening?stopListen(false):startListen();el('audio-toggle').onclick=toggleAudio;el('next').onclick=()=>{if(listening){stopListen(false);return}next()};el('back').onclick=()=>{stopListen(false);back()};el('reset').onclick=()=>{stopListen(false);reset()};el('fullscreen').onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.()};document.addEventListener('fullscreenchange',()=>document.body.classList.toggle('full',!!document.fullscreenElement));let hideTimer;document.addEventListener('mousemove',()=>{document.body.classList.add('show-controls');clearTimeout(hideTimer);hideTimer=setTimeout(()=>document.body.classList.remove('show-controls'),2500)});document.addEventListener('keydown',e=>{if(['Space','ArrowRight','ArrowLeft'].includes(e.code))e.preventDefault();if(listening&&['Space','ArrowRight','ArrowLeft','KeyR'].includes(e.code)){stopListen(false);return}if(e.code==='Space'||e.code==='ArrowRight')next();if(e.code==='ArrowLeft')back();if(e.key.toLowerCase()==='r')reset();if(e.key.toLowerCase()==='f')el('fullscreen').click()});
+// Analogue CRT: phosphor-like static and a central oscilloscope, without floating letters.
+const grainCanvas=el('grain-canvas'),scopeCanvas=el('scope-canvas');
+const gc=grainCanvas.getContext('2d'),sc=scopeCanvas.getContext('2d');
+let cw=1,ch=1,lastFrame=0,noiseFrame=0,glitchUntil=0,glitchOffset=0;
+let noiseTile=document.createElement('canvas');noiseTile.width=240;noiseTile.height=150;
+let noiseCtx=noiseTile.getContext('2d');
+function resizeVisuals(){
+ const rect=grainCanvas.parentElement.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
+ cw=rect.width;ch=rect.height;
+ for(const c of [grainCanvas,scopeCanvas]){
+  c.width=Math.max(1,Math.round(cw*dpr));c.height=Math.max(1,Math.round(ch*dpr));
+  c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+ }
+}
+function drawNoise(now){
+ if(now-noiseFrame<48)return;noiseFrame=now;
+ gc.clearRect(0,0,cw,ch);if(!textureEnabled)return;
+ // Regenerated pixel static; the image remains readable in front of it.
+ const w=noiseTile.width,h=noiseTile.height;
+ const frame=noiseCtx.createImageData(w,h);
+ for(let i=0;i<frame.data.length;i+=4){
+  const v=Math.random()*255;
+  frame.data[i]=v*.74;frame.data[i+1]=v;frame.data[i+2]=v*.82;
+  frame.data[i+3]=30+Math.random()*95;
+ }
+ noiseCtx.putImageData(frame,0,0);
+ gc.save();gc.globalAlpha=index===6?.36:.22;
+ gc.imageSmoothingEnabled=false;gc.drawImage(noiseTile,0,0,cw,ch);
+ gc.restore();
+ // Analogue horizontal scanlines and rolling hum band.
+ gc.fillStyle='rgba(0,0,0,.16)';
+ for(let y=0;y<ch;y+=4)gc.fillRect(0,y,cw,1);
+ const roll=(now*.036)%Math.max(ch,1);
+ const band=gc.createLinearGradient(0,roll-38,0,roll+38);
+ band.addColorStop(0,'rgba(170,255,205,0)');band.addColorStop(.5,'rgba(170,255,205,.07)');band.addColorStop(1,'rgba(170,255,205,0)');
+ gc.fillStyle=band;gc.fillRect(0,roll-38,cw,76);
+ if(Math.random()<(index===6?.13:.035)){
+  glitchUntil=now+45+Math.random()*130;glitchOffset=(Math.random()-.5)*26;
+ }
+ if(now<glitchUntil){
+  for(let k=0;k<5;k++){
+   const y=Math.random()*ch;
+   gc.fillStyle=`rgba(200,255,218,${.04+Math.random()*.14})`;
+   gc.fillRect(Math.random()*cw*.25,y,cw*(.4+Math.random()*.5),1+Math.random()*3);
+  }
+ }
+}
+function drawScope(now){
+ sc.clearRect(0,0,cw,ch);if(!textureEnabled)return;
+ const w=Math.min(cw*.78,680),h=Math.min(ch*.57,370);
+ const x=(cw-w)/2,y=(ch-h)/2;
+ sc.save();
+ // Central analogue glass: transparent enough to keep the asemic specimen visible.
+ sc.fillStyle='rgba(2,13,10,.36)';sc.fillRect(x,y,w,h);
+ const vignette=sc.createRadialGradient(cw/2,ch/2,12,cw/2,ch/2,w*.7);
+ vignette.addColorStop(0,'rgba(5,34,22,.04)');vignette.addColorStop(1,'rgba(0,0,0,.40)');
+ sc.fillStyle=vignette;sc.fillRect(x,y,w,h);
+ sc.strokeStyle='rgba(145,225,175,.42)';sc.lineWidth=1.4;sc.strokeRect(x+.5,y+.5,w-1,h-1);
+ sc.strokeStyle='rgba(135,220,170,.13)';sc.lineWidth=.6;
+ for(let i=1;i<10;i++){let gx=x+w*i/10;sc.beginPath();sc.moveTo(gx,y);sc.lineTo(gx,y+h);sc.stroke()}
+ for(let i=1;i<8;i++){let gy=y+h*i/8;sc.beginPath();sc.moveTo(x,gy);sc.lineTo(x+w,gy);sc.stroke()}
+ sc.strokeStyle='rgba(175,255,195,.26)';
+ sc.beginPath();sc.moveTo(x,y+h/2);sc.lineTo(x+w,y+h/2);sc.moveTo(x+w/2,y);sc.lineTo(x+w/2,y+h);sc.stroke();
+ // Irregular trace: harmonics, small noise and intermittent dropouts.
+ const t=now*.001,activity=[.18,.25,.44,.62,.73,.56,1,.002,.012][index];
+ sc.beginPath();let pen=false;
+ for(let i=0;i<=w;i+=2){
+  const u=i/w;
+  const phase=u*(19+index*3)+t*(.7+index*.13);
+  const signal=Math.sin(phase)*.57+Math.sin(phase*2.37+t*.91)*.24+Math.sin(phase*6.1-t*1.8)*.08;
+  const noise=(Math.random()-.5)*(index===6?.30:.07);
+  let yy=y+h/2-(signal+noise)*activity*h*.34;
+  // Null transmission: near-flat baseline with rare, narrow, failed lock-on spikes.
+  if(index===7 || index===8){
+    const seed=Math.floor(t*1.8)+(index===8?71:0);
+    const hash=Math.abs(Math.sin(seed*127.1+23.43)*43758.5453)%1;
+    const centre=(Math.abs(Math.sin(seed*12.9898)*43758.5453)%1)*.88+.06;
+    const spikeActive=hash>.70 && (t*1.8%1)<.24;
+    const width=.0018+(.0035*(Math.abs(Math.sin(seed*5.17))));
+    const dx=(u-centre)/width;
+    const spike=spikeActive?Math.exp(-dx*dx*.5)*(.12+.27*(Math.abs(Math.sin(seed*8.1)))):0;
+    yy=y+h/2 + (Math.random()-.5)*h*.0015 - spike*h*(seed%2?1:-1);
+  }
+  if(Math.random()<activity*.012){pen=false;continue}
+  if(!pen){sc.moveTo(x+i,yy);pen=true}else sc.lineTo(x+i,yy);
+ }
+ sc.strokeStyle='rgba(113,255,165,.25)';sc.lineWidth=5;sc.shadowBlur=14;sc.shadowColor='#65ffa2';sc.stroke();
+ sc.strokeStyle='rgba(183,255,203,.82)';sc.lineWidth=1.15;sc.shadowBlur=5;sc.stroke();sc.shadowBlur=0;
+ sc.fillStyle='rgba(185,240,195,.55)';sc.font='10px monospace';
+ sc.fillText('CH 01 / INPUT: UNREADABLE',x+13,y+18);
+ sc.fillText('TIMEBASE / VARIABLE',x+13,y+h-13);
+ sc.fillText(index>=7?'SYNC: NO LOCK':index===6?'SYNC: LOST':'SYNC: UNSTABLE',x+w-125,y+h-13);
+ if(now<glitchUntil){sc.fillStyle='rgba(160,255,185,.07)';sc.fillRect(x+glitchOffset,y+Math.random()*h,w,4+Math.random()*15)}
+ sc.restore();
+}
+function animate(now){requestAnimationFrame(animate);if(now-lastFrame<32)return;lastFrame=now;drawNoise(now);drawScope(now)}
+window.addEventListener('resize',resizeVisuals);resizeVisuals();requestAnimationFrame(animate);
+el('score').textContent=`00  this is not a text · this is a measurement of ·
+    not of a text · not of being a text ·
+    an experiment with metrics without words ·
+    for: the metric is independent of the content of words ·
+    a metric space is not a space with words ·
+    it is a set of signs and a rule for the distance between them ·
+    in the discrete metric, every word is exactly one step
+    from every other · this is where language ends ·
+    this is where we begin ·
+    noise is a rule that can only be written in full
+
+01  the object under investigation is a sentence · a hidden one ·
+    hidden by the language it was originally written in ·
+    this sentence has no beginning · it has no measurable end ·
+    its mass is approximately zero and so is the curvature
+    of the text it was probably drawn from ·
+    its increasing silence is a point-like sign, expanding ·
+    a point contains every frequency ·
+    a point, heard, is white noise
+
+02  here is where we have detected a signal ·
+    we have not detected a source ·
+    SNR: 0 dB · signal and noise are now the same size
+
+03  now that we have detected a source | we have lost the signal ·
+    the source lies behind its own horizon ·
+    its last words arrive stretched, redshifted beyond hearing ·
+    signal · (d = 2) sign · (d = 1) sigh · (d = 2) si · (d = ?) sssss
+
+04  the reconstructed characters cannot be pronounced ·
+    therefore, they must be pronounced ·
+    the following words cannot be written ·
+    therefore, they have already been written ·
+    un—read · un—said · un—seen · un—sound
+
+05  three axioms · violated ·
+    the distance from a word to itself is zero ·
+    read it twice · the distance is not zero ·
+    the distance from reading to unreading
+    is not the distance from unreading to reading ·
+    passing through a third word should never be shorter ·
+    pass through silence: it is
+
+    the reader reads the unread · the reader unreads the read ·
+    the unreader reads the read ·
+    unread the reader · read the unreader · unread the reading
+
+06  re—re—re— | ra—ra—ra— | rrrrrrrrr—
+    [abrupt silence]
+
+07  the experiment was successful · nothing has been transmitted ·
+    the meaning is lost · the loss of transmission is the meaning ·
+    [long pause]
+    nothing has been received
+
+08  · · ·
+    [whisper] repeat · and: repeat · reset · re-set`;render();
+</script></body></html>
