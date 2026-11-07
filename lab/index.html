@@ -36,13 +36,14 @@ body.inside header,body.inside footer{display:none}
 
 <main>
   <section class="panel" id="v-closed" hidden>
-    <h1 id="closed-title">Closed.</h1>
-    <p id="closed-note">Nothing is on show at the moment.</p>
+    <h1 id="closed-title">BOX CLOSED</h1>
+    <p id="closed-note">(Erwin’s cat probably inside)</p>
   </section>
 
   <section class="panel" id="v-door" hidden>
-    <h1 id="door-title">—</h1>
-    <p>Admission by request. Leave your name; the doorkeeper decides who enters. Seats are few, and nothing is recorded.</p>
+    <p class="meta" id="door-title">—</p>
+    <h1>BOX OPEN</h1>
+    <p>(mind the door: don’t let Erwin’s cat slip out)</p>
     <form id="ask" autocomplete="off">
       <label for="name" hidden>Name</label>
       <input id="name" maxlength="60" placeholder="Your name" required>
@@ -51,13 +52,13 @@ body.inside header,body.inside footer{display:none}
   </section>
 
   <section class="panel" id="v-wait" hidden>
-    <h1 class="pulse">Waiting.</h1>
-    <p><span id="your-name" style="color:var(--fg)"></span>, your request has reached the doorkeeper. Keep this page open: it opens by itself.</p>
+    <h1 class="pulse">SUPERPOSITION</h1>
+    <p>(<span id="your-name" style="color:var(--fg)"></span>, you are inside and outside at once, until the doorkeeper looks. Keep this page open.)</p>
   </section>
 
   <section class="panel" id="v-refused" hidden>
-    <h1>Not admitted.</h1>
-    <p>The doorkeeper has not admitted this request.</p>
+    <h1>COLLAPSED</h1>
+    <p>(you have been observed outside. Erwin’s cat stays in.)</p>
   </section>
 
   <section class="panel" id="v-error" hidden>
@@ -105,8 +106,8 @@ function decide(){
   document.title = title + ' · Lab of the Unreadable';
   if (!room || !room.open) {
     unloadWork(); setLamp('shut', 'closed');
-    $('closed-title').textContent = req && req.status === 'admitted' ? 'Ended.' : 'Closed.';
-    $('closed-note').textContent = req && req.status === 'admitted' ? 'The exhibition has ended. Thank you for coming.' : 'Nothing is on show at the moment.';
+    $('closed-title').textContent = req && req.status === 'admitted' ? 'Ended.' : 'BOX CLOSED';
+    $('closed-note').textContent = req && req.status === 'admitted' ? 'How was Erwin’s cat tonight?' : '(Erwin’s cat probably inside)';
     $('seats').textContent = ''; show('v-closed'); return;
   }
   $('seats').textContent = `${room.admitted ?? 0} / ${room.capacity ?? '?'} seats`;
@@ -114,7 +115,7 @@ function decide(){
   unloadWork();
   if (req && req.status === 'refused') { setLamp('shut', 'not admitted'); show('v-refused'); return; }
   if (req && req.status === 'waiting') { setLamp('', 'waiting'); $('your-name').textContent = req.name; show('v-wait'); return; }
-  if (!room.door) { setLamp('shut', 'door closed'); $('closed-title').textContent = 'Full.'; $('closed-note').textContent = 'The door is closed: the room is full or the exhibition has begun.'; show('v-closed'); return; }
+  if (!room.door) { setLamp('shut', 'door closed'); $('closed-title').textContent = 'BOX FULL'; $('closed-note').textContent = '(too many observers inside, and Erwin’s cat is one of them)'; show('v-closed'); return; }
   setLamp('open', 'door open'); show('v-door');
 }
 
