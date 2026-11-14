@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>One Letter Short of</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@300&display=swap">
+<style>
+:root{--water:#0a0d0f;--ink:#dcded8;--dim:#7d827f;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--water);color:var(--ink);font-family:var(--mono)}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+html,body,canvas{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#title{position:fixed;left:max(16px,4vw);top:max(14px,3.2vh);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);line-height:1.6}
+#read{position:fixed;background:rgba(10,13,15,.82);padding:4px 8px;margin:-4px -8px;left:max(16px,4vw);bottom:max(14px,3.2vh);font-size:11px;letter-spacing:.06em;color:var(--dim);line-height:1.7;white-space:pre}
+#ui{position:fixed;right:max(16px,4vw);bottom:max(14px,3.2vh);display:flex;gap:8px}
+#ui button{background:transparent;color:var(--dim);border:1px solid #2a3033;font:inherit;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;cursor:pointer}
+#ui button:hover,#ui button:focus-visible{color:var(--ink);border-color:var(--dim);outline:none}
+#about{position:fixed;right:max(16px,4vw);bottom:calc(max(14px,3.2vh) + 40px);max-width:min(450px,calc(100vw - 32px));
+  background:rgba(10,13,15,.95);border:1px solid #2a3033;padding:16px 18px;font-size:12px;line-height:1.7;color:#b9bdb7}
+#about b{font-weight:400;color:var(--ink)}
+[hidden]{display:none!important}
+@media (max-width:600px){#read{bottom:calc(max(14px,3.2vh) + 42px);font-size:10px}}
+</style></head><body>
+<canvas id="glass"></canvas>
+<canvas id="field"></canvas>
+<canvas id="mist"></canvas>
+<div id="title">One Letter Short of</div>
+<div id="read"></div>
+<div id="about" hidden>
+  <b>One Letter Short of</b>, 2026<br>
+  Networked installation: browser, a field of forces, a finite number of molecules.<br><br>
+  A concept is a field that organises a sign. In this tank a field of forces acts on a finite number of molecules and draws them towards the six letters of the word UTOPIA. The field is complete: it holds a place for every letter. The matter is not: the tank contains fewer molecules than the word requires. The concept cannot find enough matter to produce the sign that represents it.<br><br>
+  At first the molecules move at random. Then the field appears, the cloud is drawn towards the word, and five letters condense, each surrounded by molecules that never settle. The sixth stays empty, and the field pulls hardest towards the empty letter. The only way to fill that letter is to empty another one: a letter gives way, its molecules return to vapour, and only then do they gather where the word was incomplete.<br><br>
+  The word is never present as matter. It is present only as reading: the eye restores the missing letter, and UTOPIA is read in a tank that has never contained it. Total equilibrium is the state the tank is built for, and the one state it cannot reach. The shortage is part of the system, and so is the unrest.
+</div>
+<div id="ui"><button id="bAbout" aria-expanded="false">About</button><button id="bFull">Full screen</button></div>
+
+<script>
+'use strict';
+const WORD = 'UTOPIA';
+const FIELD_ON = 1200;   // ms of pure brownian motion before the field appears
+const RELEASE = 2500;    // ms before the cloud is drawn towards the word
+const HAND_Q = .34;      // strength of the hand's field, measured against the field of the word
+const HAND_MAX = 170;    // px: the longest reach of the hand
+const $ = id => document.getElementById(id);
+const cG = $('glass'), cF = $('field'), cM = $('mist');
+const g = cG.getContext('2d'), f = cF.getContext('2d'), m = cM.getContext('2d');
+const readEl = $('read');
+const small = matchMedia('(max-width:700px)').matches || (navigator.hardwareConcurrency || 4) <= 2;
+
+let W, H, DPR, y0;
+// targets
+let TX, TY, TL, letterTargets, letterCount, letterCentre, samples;
+// particles
+let N, X, Y, VX, VY, T, WAIT, NEXT;
+let missing = 0, phase = 'settle', phaseEnd = 0, dissolving = -1;
+let weights = new Float32Array(WORD.length).fill(1);
+// field grid
+let GS, GX, GY, gridField;   // per-letter field at each grid point
+let bootStart = 0, fieldA = 0, GCOLS = 0, GROWS = 0, EW = [], JIT;
+let ptr = null, t0 = performance.now(), frameNo = 0;
+
+const rnd = (a, b) => a + Math.random() * (b - a);
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ---------------- the tank: edges glimpsed at the sides, a water line above ---------------- */
+function drawGlass() {
+  g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, W, H);
+  const L = W * .03, R = W * .97, Tp = H * .08, B = H * .955;
+  const edge = (x1, y1, x2, y2, a) => { const gr = g.createLinearGradient(x1, y1, x2, y2);
+    gr.addColorStop(0, 'rgba(190,205,210,0)'); gr.addColorStop(.5, `rgba(190,205,210,${a})`); gr.addColorStop(1, 'rgba(190,205,210,0)');
+    g.strokeStyle = gr; g.lineWidth = 1; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); };
+  edge(L, 0, L, H, .22); edge(L + 6, 0, L + 6, H, .07);
+  edge(R, 0, R, H, .22); edge(R - 6, 0, R - 6, H, .07);
+  edge(0, B, W, B, .14);
+  g.strokeStyle = 'rgba(190,205,210,.13)'; g.beginPath(); g.moveTo(L, Tp - 7); g.quadraticCurveTo(L + 20, Tp, L + 46, Tp);
+  g.lineTo(R - 46, Tp); g.quadraticCurveTo(R - 20, Tp, R, Tp - 7); g.stroke();
+}
+
+/* ---------------- the word: a mould of positions, sampled letter by letter ---------------- */
+function build() {
+  DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; y0 = H * .5;
+  for (const c of [cG, cF, cM]) { c.width = W * DPR; c.height = H * DPR; }
+  drawGlass();
+  const size = Math.min(W * .18, H * .32);
+  const off = document.createElement('canvas'), o = off.getContext('2d', {willReadFrequently: true});
+  off.width = W; off.height = H;
+  o.font = `300 ${size}px "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif`;
+  const gap = size * .07;
+  const widths = [...WORD].map(ch => o.measureText(ch).width);
+  const total = widths.reduce((a, b) => a + b, 0) + gap * (WORD.length - 1);
+  let x = (W - total) / 2; const base = y0 + size * .36;
+  const cap = small ? 10000 : (W * H > 1.4e6 ? 26000 : 20000);
+  const per = [];
+  let step = 1.4;
+  [...WORD].forEach((ch, i) => {
+    o.clearRect(0, 0, W, H); o.fillStyle = '#fff'; o.fillText(ch, x, base);
+    const d = o.getImageData(0, 0, W, H).data, pts = [];
+    for (let yy = 0; yy < H; yy++) for (let xx = Math.max(0, Math.floor(x - 2)); xx < Math.min(W, x + widths[i] + 2); xx++)
+      if (d[(yy * W + xx) * 4 + 3] > 100) { pts.push([xx + Math.random(), yy + Math.random()]); pts.push([xx + Math.random(), yy + Math.random()]); }
+    per.push(pts); x += widths[i] + gap;
+  });
+  // thin every letter by the same ratio, so the density of the mould is uniform
+  const all = per.reduce((a, p) => a + p.length, 0), keep = Math.min(1, cap / all);
+  const tx = [], ty = [], tl = [];
+  letterTargets = []; letterCount = []; letterCentre = []; samples = [];
+  per.forEach((pts, i) => {
+    shuffle(pts); const k = Math.round(pts.length * keep), idx = [];
+    let cx = 0, cy = 0;
+    for (let j = 0; j < k; j++) { idx.push(tx.length); tx.push(pts[j][0]); ty.push(pts[j][1]); tl.push(i); cx += pts[j][0]; cy += pts[j][1]; }
+    letterTargets.push(idx); letterCount.push(k); letterCentre.push([cx / k, cy / k]);
+    samples.push(idx.slice(0, 40).map(t => [tx[t], ty[t]]));
+  });
+  TX = Float32Array.from(tx); TY = Float32Array.from(ty); TL = Uint8Array.from(tl);
+  // the shortage: fewer molecules than the word requires
+  const need = TX.length, minC = Math.min(...letterCount);
+  N = need - Math.round(minC * .82);
+  X = new Float32Array(N); Y = new Float32Array(N); VX = new Float32Array(N); VY = new Float32Array(N);
+  JIT = new Float32Array(N).map(() => .85 + Math.random() * .3);
+  T = new Int32Array(N); WAIT = new Float32Array(N); NEXT = new Int32Array(N);
+  // initial allocation: one letter is left empty, the rest are filled, the remainder is vapour
+  missing = Math.floor(Math.random() * WORD.length);
+  const slots = [];
+  letterTargets.forEach((idx, i) => { if (i !== missing) slots.push(...idx); });
+  shuffle(slots);
+  for (let i = 0; i < N; i++) {
+    X[i] = rnd(W * .04, W * .96); Y[i] = rnd(H * .1, H * .94); VX[i] = VY[i] = 0;
+    T[i] = -1; NEXT[i] = i < slots.length ? slots[i] : -1;
+    WAIT[i] = performance.now() + RELEASE + Math.random() * 1500;
+  }
+  bootStart = performance.now(); phase = 'boot'; phaseEnd = bootStart + RELEASE + 6500; dissolving = -1;
+  weights = new Float32Array(WORD.length).fill(1); weights[missing] = 2.4;
+  buildGrid();
+  m.setTransform(DPR, 0, 0, DPR, 0, 0); m.clearRect(0, 0, W, H);
+  f.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+
+/* ---------------- the field: computed on a grid, letter by letter, then weighted ---------------- */
+function buildGrid() {
+  GS = small ? 26 : 20;
+  const cols = Math.ceil(W / GS) + 1, rows = Math.ceil(H / GS) + 1; GCOLS = cols; GROWS = rows;
+  GX = []; GY = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { GX.push(c * GS + (r % 2 ? GS / 2 : 0)); GY.push(r * GS); }
+  gridField = WORD.split('').map((_, l) => {
+    const F = new Float32Array(GX.length * 2), S = samples[l];
+    for (let k = 0; k < GX.length; k++) {
+      let fx = 0, fy = 0;
+      for (const s of S) { const dx = s[0] - GX[k], dy = s[1] - GY[k], r2 = dx * dx + dy * dy + 900; fx += dx / r2; fy += dy / r2; }
+      F[k * 2] = fx / S.length; F[k * 2 + 1] = fy / S.length;
+    }
+    return F;
+  });
+}
+function drawField() {
+  f.clearRect(0, 0, W, H);
+  f.lineWidth = 1;
+  const B = bField();
+  for (let k = 0; k < GX.length; k++) {
+    let fx = 0, fy = 0;
+    for (let l = 0; l < WORD.length; l++) { fx += gridField[l][k * 2] * weights[l]; fy += gridField[l][k * 2 + 1] * weights[l]; }
+    if (ptr) { const dx = GX[k] - ptr.x, dy = GY[k] - ptr.y, r2 = dx * dx + dy * dy + 900; fx += dx / r2 * 4; fy += dy / r2 * 4; }
+    const mag = Math.hypot(fx, fy); if (mag < 1e-6) continue;
+    // a slight twist: the magnetic component that curves the paths
+    const ang = Math.atan2(fy, fx) + B * 6;
+    const a = Math.tanh(mag * 30) * .26 * fieldA, len = 2.5 + 5.5 * Math.tanh(mag * 30);
+    const ux = Math.cos(ang) * len, uy = Math.sin(ang) * len;
+    f.strokeStyle = `rgba(150,175,182,${a.toFixed(3)})`;
+    f.beginPath(); f.moveTo(GX[k] - ux, GY[k] - uy); f.lineTo(GX[k] + ux, GY[k] + uy); f.stroke();
+  }
+}
+function gridIndex(x, y) {
+  let r = Math.round(y / GS); r = r < 0 ? 0 : r >= GROWS ? GROWS - 1 : r;
+  let c = Math.round((x - (r % 2 ? GS / 2 : 0)) / GS); c = c < 0 ? 0 : c >= GCOLS ? GCOLS - 1 : c;
+  return r * GCOLS + c;
+}
+function combineField() {
+  if (EW.length !== GX.length) EW = GX.map(() => [0, 0]);
+  for (let k = 0; k < GX.length; k++) { let fx = 0, fy = 0;
+    for (let l = 0; l < WORD.length; l++) { fx += gridField[l][k * 2] * weights[l]; fy += gridField[l][k * 2 + 1] * weights[l]; }
+    EW[k][0] = fx; EW[k][1] = fy; }
+}
+const bField = () => .035 * Math.sin((performance.now() - t0) / 9000);
+
+/* ---------------- the unrest: to complete one letter, another has to give up its molecules ---------------- */
+function nextExchange(now) {
+  if (phase === 'boot' && now > phaseEnd) { phase = 'settle'; phaseEnd = now + rnd(8000, 14000); }
+  // 1. a letter gives way: its molecules evaporate and become vapour
+  if (phase === 'settle' && now > phaseEnd) {
+    let d; do d = Math.floor(Math.random() * WORD.length); while (d === missing);
+    dissolving = d;
+    for (let i = 0; i < N; i++) if (T[i] >= 0 && TL[T[i]] === d) { NEXT[i] = -1; WAIT[i] = now + rnd(0, 5000); }
+    phase = 'evaporate'; phaseEnd = now + 5500;
+  }
+  // 2. only when that letter can no longer be read does the vapour condense into the missing one
+  if (phase === 'evaporate' && now > phaseEnd && arrived[dissolving] < letterCount[dissolving] * .08) {
+    const pool = [];
+    for (let i = 0; i < N; i++) if (T[i] === -1 && NEXT[i] === -2) pool.push(i);
+    shuffle(pool);
+    const slots = shuffle(letterTargets[missing].slice()), n = Math.min(slots.length, pool.length);
+    for (let j = 0; j < n; j++) { NEXT[pool[j]] = slots[j]; WAIT[pool[j]] = now + rnd(0, 4000); }
+    phase = 'condense'; phaseEnd = now + 9000;
+  }
+  if (phase === 'condense' && now > phaseEnd) {
+    missing = dissolving; dissolving = -1;
+    phase = 'settle'; phaseEnd = now + rnd(14000, 24000);
+  }
+  // the field pulls hardest towards the letter that is absent
+  const target = new Float32Array(WORD.length).fill(1);
+  if (phase === 'condense') target[dissolving] = 2.4; else target[missing] = 2.4;
+  for (let l = 0; l < WORD.length; l++) weights[l] += (target[l] - weights[l]) * .02;
+}
+
+/* ---------------- the motion ---------------- */
+let last = performance.now(), arrived = new Int32Array(WORD.length);
+function frame(now) {
+  const dt = Math.min(2.5, (now - last) / 16.67); last = now; frameNo++;
+  nextExchange(now);
+  const B = bField();
+  // fade, keeping the canvas transparent so the tank shows through
+  m.globalCompositeOperation = 'destination-out'; m.fillStyle = 'rgba(0,0,0,0.28)'; m.fillRect(0, 0, W, H);
+  m.globalCompositeOperation = 'source-over';
+  arrived.fill(0);
+    for (let i = 0; i < N; i++) {
+    if (NEXT[i] !== -2 && now > WAIT[i]) { T[i] = NEXT[i]; NEXT[i] = -2; }
+    let ax = 0, ay = 0, damp, noise;
+    const t = T[i];
+    if (t >= 0) {
+      const dx = TX[t] - X[i], dy = TY[t] - Y[i], r = Math.hypot(dx, dy);
+      // far field: an attraction that grows weaker with distance; near field: a well
+      const far = .32 / (r + 40), near = r < 30 ? .03 : 0;
+      ax = dx * (far + near); ay = dy * (far + near);
+      damp = r < 30 ? .84 : .975; noise = r < 30 ? .95 : .10;
+      // about one molecule in seven never settles: it fluctuates noisily around its place
+      if (i % 7 === 0 && phase !== 'boot') { noise = 2.6; damp = .9; }
+      if (r < 9) arrived[TL[t]]++;
+    } else {
+      // vapour: no place in the word. Brownian before the field appears; afterwards a noisy
+      // fluctuation around the letters that hold, never around the absent one or the one giving way
+      if (fieldA <= 0) { damp = .96; noise = .45; }
+      else {
+        let q = (i * 7919) % TX.length;
+        while (TL[q] === missing || TL[q] === dissolving) q = (q + 997) % TX.length;
+        const dx = TX[q] - X[i], dy = TY[q] - Y[i], r = Math.hypot(dx, dy);
+        ax = dx * .07 * fieldA / (r + 50); ay = dy * .07 * fieldA / (r + 50);
+        damp = .965; noise = .95;
+      }
+    }
+    // magnetic component (v × B): the paths curve instead of running straight
+    ax += B * VY[i]; ay -= B * VX[i];
+    // the hand: a second field, which has no edge of its own. Its reach in each direction is set by
+    // the field of the word at that point: short where the word pulls back towards the hand,
+    // long where the word's field runs the same way as the hand's push. Inside that reach the
+    // molecules cannot re-enter while the hand stays; the rim is a line of equilibrium between the two fields.
+    if (ptr) { const dx = X[i] - ptr.x, dy = Y[i] - ptr.y, r = Math.sqrt(dx * dx + dy * dy) + .001;
+      if (r < HAND_MAX) {
+        let ex = 0, ey = 0;
+        for (let l = 0; l < WORD.length; l++) { const S = samples[l], w = weights[l] / S.length;
+          for (let q = 0; q < S.length; q++) { const sx = S[q][0] - X[i], sy = S[q][1] - Y[i], r2 = sx * sx + sy * sy + 900; ex += w * sx / r2; ey += w * sy / r2; } }
+        const em = Math.hypot(ex, ey) + 1e-6;
+        const against = Math.max(0, -(ex * dx + ey * dy) / (em * r));       // the word pulls back towards the hand
+        const rb = Math.min(HAND_MAX, HAND_Q * JIT[i] / (em * (.32 + 1.4 * against)));
+        if (r < rb) {
+          const push = 1.3 * (1 - r / rb);
+          ax += dx / r * push + ptr.vx * .004; ay += dy / r * push + ptr.vy * .004;
+          const vr = (VX[i] * dx + VY[i] * dy) / r; if (vr < 0) { VX[i] -= vr * dx / r; VY[i] -= vr * dy / r; }
+        }
+      } }
+    ax += (Math.random() - .5) * noise; ay += (Math.random() - .5) * noise;
+    VX[i] = (VX[i] + ax * dt) * Math.pow(damp, dt); VY[i] = (VY[i] + ay * dt) * Math.pow(damp, dt);
+    X[i] += VX[i] * dt; Y[i] += VY[i] * dt;
+    // the glass: molecules bounce off the walls, the bottom and the water line
+    if (X[i] < W * .035) { X[i] = W * .035; VX[i] = Math.abs(VX[i]); } else if (X[i] > W * .965) { X[i] = W * .965; VX[i] = -Math.abs(VX[i]); }
+    if (Y[i] < H * .09) { Y[i] = H * .09; VY[i] = Math.abs(VY[i]); } else if (Y[i] > H * .95) { Y[i] = H * .95; VY[i] = -Math.abs(VY[i]); }
+  }
+  m.fillStyle = 'rgba(222,224,218,0.5)';
+  for (let i = 0; i < N; i++) m.fillRect(X[i], Y[i], 1, 1);
+  fieldA = Math.min(1, Math.max(0, (now - bootStart - FIELD_ON) / 2000));
+  if (frameNo % 2 === 0) drawField();
+  if (ptr) { ptr.vx *= .8; ptr.vy *= .8; }
+  // readout
+  let formed = 0; for (let l = 0; l < WORD.length; l++) if (arrived[l] > letterCount[l] * .8) formed++;
+  const secs = Math.floor((now - t0) / 1000), p2 = n => String(n).padStart(2, '0');
+  const fmt = n => n.toLocaleString('en-GB');
+  readEl.textContent =
+    `molecules  ${fmt(N)}   required  ${fmt(TX.length)}\n` +
+    `letters formed  ${formed} / ${WORD.length}   missing  ${WORD[missing]}${dissolving >= 0 ? `   giving way  ${WORD[dissolving]}` : ''}\n` +
+    `t  ${p2(Math.floor(secs / 3600))}:${p2(Math.floor(secs / 60) % 60)}:${p2(secs % 60)}`;
+  requestAnimationFrame(frame);
+}
+
+addEventListener('pointermove', e => { const vx = ptr ? e.clientX - ptr.x : 0, vy = ptr ? e.clientY - ptr.y : 0; ptr = {x: e.clientX, y: e.clientY, vx, vy}; });
+addEventListener('pointerleave', () => ptr = null);
+addEventListener('pointercancel', () => ptr = null);
+addEventListener('pointerdown', e => { ptr = {x: e.clientX, y: e.clientY, vx: 0, vy: 0}; });
+addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') ptr = null; });
+addEventListener('resize', () => { clearTimeout(window._r); window._r = setTimeout(build, 250); });
+$('bAbout').onclick = () => { const a = $('about'); a.hidden = !a.hidden; $('bAbout').setAttribute('aria-expanded', String(!a.hidden)); };
+$('bFull').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.().catch(() => {});
+(document.fonts && document.fonts.load ? Promise.race([document.fonts.load('300 100px "IBM Plex Sans"'), new Promise(r => setTimeout(r, 1500))]) : Promise.resolve())
+  .then(() => { build(); requestAnimationFrame(frame); });
+</script>
+</body></html>
