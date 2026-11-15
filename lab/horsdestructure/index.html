@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Hors de structure · Lab of the Unreadable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@300&display=swap">
+<style>
+/* A dark room for verbo-visual works. The visitor carries a lamp: what is lit can be read,
+   and what was lit slowly goes dark again. Click a work to come closer. */
+:root{--wall:#191917;--ink:#ecebe7;--dim:#8b8a85;--line:#3a3936;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;--sans:"IBM Plex Sans",system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:#070707;color:var(--ink);font-family:var(--sans);font-weight:300;
+  -webkit-user-select:none;user-select:none;touch-action:none}
+#room{position:fixed;inset:0;cursor:crosshair}
+#room.drag{cursor:grabbing}
+#wall{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;
+  background:var(--wall) radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px) 0 0/7px 7px}
+.work{position:absolute;transform-origin:50% 50%;box-shadow:0 18px 40px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.5);cursor:zoom-in}
+.work img{display:block;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none}
+.label{position:absolute;font-family:var(--mono);color:var(--dim);font-size:22px;line-height:1.35;letter-spacing:.02em;white-space:nowrap;pointer-events:none}
+.label b{font-weight:400;color:#c9c7c1}
+#dark{position:fixed;inset:0;pointer-events:none;transition:opacity 1.2s ease}
+body.focus #dark{opacity:0}
+body.focus .work{cursor:zoom-out}
+/* intro */
+#intro{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;transition:opacity 1.6s ease;padding:24px}
+#intro.gone{opacity:0}
+#intro .box{max-width:560px;text-align:left}
+#intro .k{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 18px}
+#intro h1{font-weight:300;font-size:clamp(30px,5vw,54px);line-height:1.05;margin:0 0 14px;letter-spacing:-.01em}
+#intro p{margin:0;color:var(--dim);font-size:15px;line-height:1.7}
+/* caption in focus */
+#cap{position:fixed;left:max(16px,3vw);bottom:max(16px,3vh);font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--ink);
+  background:rgba(7,7,7,.72);padding:10px 14px;opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s;pointer-events:none;max-width:calc(100vw - 32px)}
+#cap .n{color:var(--dim);margin-right:10px}
+body.focus #cap{opacity:1;transform:none}
+/* controls */
+#ui{position:fixed;top:max(14px,2vh);right:max(14px,2vw);display:flex;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+#ui button{background:rgba(7,7,7,.6);color:var(--dim);border:1px solid var(--line);padding:7px 10px;font:inherit;letter-spacing:inherit;cursor:pointer}
+#ui button:hover,#ui button:focus-visible{color:var(--ink);border-color:var(--dim);outline:none}
+#index{position:fixed;top:calc(max(14px,2vh) + 40px);right:max(14px,2vw);background:rgba(7,7,7,.92);border:1px solid var(--line);
+  padding:10px 0;margin:0;list-style:none;font-family:var(--mono);font-size:12px;max-height:70vh;overflow:auto;min-width:260px}
+#index li button{display:flex;gap:12px;width:100%;text-align:left;background:none;border:0;color:var(--dim);font:inherit;padding:6px 16px;cursor:pointer}
+#index li button:hover,#index li button:focus-visible{color:var(--ink);outline:none;background:rgba(255,255,255,.04)}
+#index .y{margin-left:auto;padding-left:16px}
+#nav{position:fixed;right:max(14px,2vw);bottom:max(14px,2vh);display:none;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+body.focus #nav{display:flex}
+#nav button{background:rgba(7,7,7,.6);color:var(--dim);border:1px solid var(--line);padding:7px 10px;font:inherit;letter-spacing:inherit;cursor:pointer}
+#nav button:hover{color:var(--ink)}
+[hidden]{display:none!important}
+@media (max-width:640px){#cap{bottom:calc(max(14px,2vh) + 46px)}}
+@media (prefers-reduced-motion:reduce){#dark,#intro,#cap{transition:none}}
+</style></head><body>
+<div id="room"><div id="wall"></div></div>
+<canvas id="dark"></canvas>
+
+<div id="intro"><div class="box">
+  <p class="k">Lab of the Unreadable · temporary exhibition</p>
+  <h1 id="xtitle">Hors de structure</h1>
+  <p id="xsub"></p>
+  <p style="margin-top:18px">Move the light to read. Drag to walk along the wall. Click a work to come closer; click again, or press Esc, to step back.</p>
+</div></div>
+
+<div id="ui"><button id="bIndex" aria-expanded="false">Index</button><button id="bFull">Full screen</button></div>
+<ul id="index" hidden></ul>
+<div id="cap" aria-live="polite"></div>
+<div id="nav"><button id="bPrev" aria-label="Previous work">← prev</button><button id="bNext" aria-label="Next work">next →</button></div>
+
+<script>
+/* ---------- the exhibition: edit titles and years here ---------- */
+const EXHIBITION = 'Hors de structure';
+const WORKS = [
+  // file, title, year, position on the wall (centre x, y), height on the wall, tilt in degrees
+  {f:'hors-de-structure-1.jpg',  t:'hors de structure',                       y:'',     x:900,  yy:1050, h:1000, r:-1.2},
+  {f:'january-titmouse.jpg',     t:'January Titmouse (alt. take)',            y:'',     x:2150, yy:850,  h:1050, r:0.8},
+  {f:'act-of-loss.jpg',          t:'and what if reading were an act of loss?',y:'',     x:3400, yy:1150, h:1000, r:-0.5},
+  {f:'word-music.jpg',           t:'word music for 3 pigment liners',         y:'',     x:4650, yy:880,  h:1050, r:1.1},
+  {f:'pollen-and-distance.jpg',  t:'lecture on pollen and distance',          y:'', x:5900, yy:1150, h:1100, r:-0.7},
+  {f:'multiscale-graphite.jpg',  t:'multiscale graphite field on paper',      y:'', x:6100, yy:2900, h:1100, r:0.6},
+  {f:'filaments.jpg',            t:'untitled',                                y:'',     x:4800, yy:2700, h:860,  r:-0.4},
+  {f:'tautologie-des-samens.jpg',t:'Tautologie des Samens',                   y:'',     x:3500, yy:3000, h:1100, r:0.9},
+  {f:'noise-channel.jpg',        t:'untitled',                                y:'',     x:2150, yy:2750, h:820,  r:-1.0},
+  {f:'taxonomy-truth-table.jpg', t:'taxonomy of an absence / truth table for a single statement', y:'', x:950, yy:2950, h:760, r:0.4},
+  {f:'black-cloud.jpg',          t:'untitled (black cloud)',                  y:'',     x:1400, yy:4550, h:1050, r:-0.6},
+  {f:'ten-collisions.jpg',       t:'ten collisions',                          y:'',     x:2800, yy:4650, h:1050, r:0.7},
+  {f:'hors-de-structure-2.jpg',  t:'hors de structure (second state)',        y:'',     x:4200, yy:4550, h:1050, r:-0.9},
+];
+const WALL_W = 7100, WALL_H = 5400;
+
+/* ---------- build the wall ---------- */
+const $ = id => document.getElementById(id);
+const room = $('room'), wall = $('wall'), dark = $('dark'), cap = $('cap');
+document.title = EXHIBITION + ' · Lab of the Unreadable';
+$('xtitle').textContent = EXHIBITION;
+$('xsub').textContent = WORKS.length + ' verbo-visual works';
+wall.style.width = WALL_W + 'px'; wall.style.height = WALL_H + 'px';
+const caption = w => w.t + (w.y ? ', ' + w.y : '');
+const els = [];
+WORKS.forEach((w, i) => {
+  const d = document.createElement('div'); d.className = 'work';
+  const img = new Image(); img.alt = caption(w); img.decoding = 'async'; img.src = 'works/' + w.f; img.loading = i < 5 ? 'eager' : 'lazy';
+  d.append(img);
+  const place = () => {
+    const ar = (img.naturalWidth || 1) / (img.naturalHeight || 1);
+    w.w = w.h * ar;
+    Object.assign(d.style, {width: w.w + 'px', height: w.h + 'px', left: (w.x - w.w / 2) + 'px', top: (w.yy - w.h / 2) + 'px', transform: `rotate(${w.r}deg)`});
+    lab.style.left = (w.x + w.w / 2 - 10) + 'px'; lab.style.top = (w.yy + w.h / 2 + 34) + 'px'; lab.style.transform = 'translateX(-100%)';
+  };
+  const lab = document.createElement('div'); lab.className = 'label';
+  lab.innerHTML = `<b></b>`; lab.firstChild.textContent = w.t; if (w.y) lab.append(document.createTextNode(', ' + w.y));
+  w.w = w.h * .78; place(); img.addEventListener('load', place);
+  d.addEventListener('click', ev => { if (moved) return; ev.stopPropagation(); if (focused === i) unfocus(true); else focusOn(i); });
+  wall.append(d, lab); els.push(d);
+});
+
+/* ---------- camera ---------- */
+let vw = innerWidth, vh = innerHeight;
+const cam = {x: WORKS[0].x + 300, y: WORKS[0].yy, s: 1};
+const fitScale = () => Math.min(vh * 0.62 / 1050, vw * 0.5 / 800);
+cam.s = fitScale();
+let anim = null;
+function apply() {
+  wall.style.transform = `translate(${vw / 2 - cam.x * cam.s}px,${vh / 2 - cam.y * cam.s}px) scale(${cam.s})`;
+}
+function clampCam() {
+  const m = 400;
+  cam.x = Math.max(-m, Math.min(WALL_W + m, cam.x));
+  cam.y = Math.max(-m, Math.min(WALL_H + m, cam.y));
+  cam.s = Math.max(0.12, Math.min(2.5, cam.s));
+}
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function flyTo(x, y, s, ms = 1100) {
+  if (reduce) ms = 1;
+  const a = {...cam}, t0 = performance.now();
+  cancelAnimationFrame(anim);
+  const step = now => {
+    const k = Math.min(1, (now - t0) / ms), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    const px = cam.x, py = cam.y, ps = cam.s;
+    cam.x = a.x + (x - a.x) * e; cam.y = a.y + (y - a.y) * e; cam.s = a.s + (s - a.s) * e;
+    shiftDark(px, py, ps); apply();
+    if (k < 1) anim = requestAnimationFrame(step);
+  };
+  anim = requestAnimationFrame(step);
+}
+
+/* ---------- darkness: the lamp clears it, time brings it back ---------- */
+const ctx = dark.getContext('2d');
+const scratch = document.createElement('canvas'), sctx = scratch.getContext('2d');
+let lamp = {x: vw / 2, y: vh / 2, on: false};
+function sizeDark() {
+  vw = innerWidth; vh = innerHeight;
+  for (const c of [dark, scratch]) { c.width = vw; c.height = vh; }
+  ctx.fillStyle = '#070707'; ctx.fillRect(0, 0, vw, vh);
+}
+// when the camera moves, what is already lit travels with the wall
+function shiftDark(px, py, ps) {
+  if (px === cam.x && py === cam.y && ps === cam.s) return;
+  sctx.clearRect(0, 0, vw, vh); sctx.drawImage(dark, 0, 0);
+  const k = cam.s / ps;
+  const dx = vw / 2 - cam.x * cam.s - (vw / 2 - px * ps) * k;
+  const dy = vh / 2 - cam.y * cam.s - (vh / 2 - py * ps) * k;
+  const W = vw * k, H = vh * k;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.clearRect(0, 0, vw, vh);
+  ctx.drawImage(scratch, dx, dy, W, H);
+  // what comes into view from outside the old frame is dark
+  ctx.fillStyle = '#070707';
+  if (dy > 0) ctx.fillRect(0, 0, vw, Math.ceil(dy));
+  if (dy + H < vh) ctx.fillRect(0, Math.floor(dy + H), vw, vh);
+  if (dx > 0) ctx.fillRect(0, 0, Math.ceil(dx), vh);
+  if (dx + W < vw) ctx.fillRect(Math.floor(dx + W), 0, vw, vh);
+}
+function frame() {
+  // time: everything lit drifts back towards darkness
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(7,7,7,0.018)'; ctx.fillRect(0, 0, vw, vh);
+  if (lamp.on) {
+    const R = Math.max(150, Math.min(vw, vh) * 0.26);
+    const g = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, R);
+    g.addColorStop(0, 'rgba(0,0,0,0.30)'); g.addColorStop(.55, 'rgba(0,0,0,0.16)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = g; ctx.fillRect(lamp.x - R, lamp.y - R, 2 * R, 2 * R);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- walking, reading, coming closer ---------- */
+let down = null, moved = false, focused = -1, introGone = false;
+// the title stays for at least three seconds, then leaves at the first real gesture
+const t0 = performance.now(); let travel = 0, last = null;
+function hideIntro(force) {
+  if (introGone) return;
+  if (!force && performance.now() - t0 < 3000) return;
+  introGone = true; $('intro').classList.add('gone');
+}
+room.addEventListener('pointerdown', ev => {
+  down = {x: ev.clientX, y: ev.clientY, cx: cam.x, cy: cam.y}; moved = false;
+  lamp = {x: ev.clientX, y: ev.clientY, on: true}; hideIntro(true);
+});
+addEventListener('pointermove', ev => {
+  lamp.x = ev.clientX; lamp.y = ev.clientY; lamp.on = true;
+  if (last) travel += Math.hypot(ev.clientX - last.x, ev.clientY - last.y); last = {x: ev.clientX, y: ev.clientY};
+  if (travel > 400) hideIntro();
+  if (!down) return;
+  const dx = ev.clientX - down.x, dy = ev.clientY - down.y;
+  if (!moved && Math.hypot(dx, dy) > 6) { moved = true; room.classList.add('drag'); if (focused >= 0) unfocus(false); }
+  if (moved) {
+    cancelAnimationFrame(anim);
+    const px = cam.x, py = cam.y, ps = cam.s;
+    cam.x = down.cx - dx / cam.s; cam.y = down.cy - dy / cam.s; clampCam();
+    shiftDark(px, py, ps); apply();
+  }
+});
+addEventListener('pointerup', () => { down = null; room.classList.remove('drag'); setTimeout(() => moved = false, 0); });
+room.addEventListener('pointerleave', ev => { if (ev.pointerType === 'mouse') lamp.on = false; });
+room.addEventListener('click', () => { if (!moved && focused >= 0) unfocus(true); });
+room.addEventListener('wheel', ev => {
+  ev.preventDefault(); hideIntro(true); cancelAnimationFrame(anim);
+  const px = cam.x, py = cam.y, ps = cam.s;
+  if (ev.ctrlKey || ev.metaKey) {
+    // zoom around the pointer
+    const wx = cam.x + (ev.clientX - vw / 2) / cam.s, wy = cam.y + (ev.clientY - vh / 2) / cam.s;
+    cam.s *= Math.exp(-ev.deltaY * 0.0025); clampCam();
+    cam.x = wx - (ev.clientX - vw / 2) / cam.s; cam.y = wy - (ev.clientY - vh / 2) / cam.s;
+  } else {
+    if (focused >= 0) unfocus(false);
+    cam.x += ev.deltaX / cam.s; cam.y += ev.deltaY / cam.s;
+  }
+  clampCam(); shiftDark(px, py, ps); apply();
+}, {passive: false});
+
+let before = null;
+function focusOn(i) {
+  if (focused < 0) before = {...cam};
+  focused = i; const w = WORKS[i];
+  const s = Math.min(vh * 0.86 / w.h, vw * 0.84 / w.w, 2.2);
+  flyTo(w.x, w.yy, s);
+  document.body.classList.add('focus');
+  cap.innerHTML = `<span class="n">${String(i + 1).padStart(2, '0')} / ${String(WORKS.length).padStart(2, '0')}</span>`;
+  cap.append(document.createTextNode(caption(w)));
+}
+function unfocus(back) {
+  if (focused < 0) return;
+  const w = WORKS[focused]; focused = -1;
+  document.body.classList.remove('focus');
+  // stepping back: the lamp is left on the work just seen, and the room is dark again around it
+  ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#070707'; ctx.fillRect(0, 0, vw, vh);
+  if (back) flyTo(w.x, w.yy, fitScale(), 900);
+  lamp = {x: vw / 2, y: vh / 2, on: true};
+}
+$('bPrev').onclick = ev => { ev.stopPropagation(); focusOn((focused - 1 + WORKS.length) % WORKS.length); };
+$('bNext').onclick = ev => { ev.stopPropagation(); focusOn((focused + 1) % WORKS.length); };
+addEventListener('keydown', ev => {
+  const step = 120 / cam.s, px = cam.x, py = cam.y, ps = cam.s;
+  if (ev.key === 'Escape') { if (focused >= 0) unfocus(true); else { $('index').hidden = true; $('bIndex').setAttribute('aria-expanded', 'false'); } return; }
+  if (focused >= 0 && (ev.key === 'ArrowRight' || ev.key === 'ArrowDown')) { focusOn((focused + 1) % WORKS.length); return; }
+  if (focused >= 0 && (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp')) { focusOn((focused - 1 + WORKS.length) % WORKS.length); return; }
+  if (ev.key === 'ArrowRight') cam.x += step; else if (ev.key === 'ArrowLeft') cam.x -= step;
+  else if (ev.key === 'ArrowDown') cam.y += step; else if (ev.key === 'ArrowUp') cam.y -= step;
+  else if (ev.key === '+' || ev.key === '=') cam.s *= 1.15; else if (ev.key === '-') cam.s /= 1.15;
+  else return;
+  hideIntro(true); clampCam(); shiftDark(px, py, ps); apply();
+});
+
+/* ---------- index and full screen ---------- */
+const list = $('index');
+WORKS.forEach((w, i) => {
+  const li = document.createElement('li'), b = document.createElement('button');
+  b.innerHTML = `<span>${String(i + 1).padStart(2, '0')}</span><span class="t"></span><span class="y"></span>`;
+  b.querySelector('.t').textContent = w.t; b.querySelector('.y').textContent = w.y;
+  b.onclick = ev => { ev.stopPropagation(); list.hidden = true; $('bIndex').setAttribute('aria-expanded', 'false'); hideIntro(true); focusOn(i); };
+  li.append(b); list.append(li);
+});
+$('bIndex').onclick = ev => { ev.stopPropagation(); list.hidden = !list.hidden; $('bIndex').setAttribute('aria-expanded', String(!list.hidden)); };
+$('bFull').onclick = ev => {
+  ev.stopPropagation();
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen?.().catch(() => {});
+};
+for (const id of ['ui', 'index', 'nav']) $(id).addEventListener('pointerdown', ev => ev.stopPropagation());
+
+addEventListener('resize', () => { sizeDark(); if (focused >= 0) focusOn(focused); else apply(); });
+sizeDark(); apply(); frame();
+</script>
+</body></html>
